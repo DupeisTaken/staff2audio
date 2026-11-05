@@ -1,0 +1,47 @@
+{
+  "local": {
+    "environment": "Windows 11 x64; Python 3.14.5; PyInstaller 6.22.3",
+    "python_tests": 76,
+    "javascript_tests": 122,
+    "executable_mib": 94.67,
+    "archive_mib": 94.26,
+    "startup_seconds": 10.299,
+    "fallback_startup_seconds": 4.174
+  },
+  "checks": [
+    "76 Python regressions passed, including real socket reservation, occupied/explicit port handling, browser readiness, Linux library-path restoration, archive contents, Unix modes and checksums.",
+    "122 JavaScript regressions passed for notation, tempo, document state, sample loading, audio lifecycle and MIDI/WAV bytes.",
+    "Actual Windows one-file executable passed from an empty temporary directory with Python removed from PATH and Python environment variables removed.",
+    "Packaged health/privacy headers, frontend assets, runtime license inventory and all 88 embedded MP3 payloads passed.",
+    "Actual packaged font/demo recognition, uploaded PNG recognition, two-page synthetic PDF inventory, native PDF preview and page-two recognition passed.",
+    "A second executable launch passed with the usual port occupied; no requests or process actions targeted the existing port owner.",
+    "The distributed Windows ZIP was built with the executable, quickstart, application license, 19 runtime dependency license inventories and a SHA-256 sidecar.",
+    "All four native GitHub Actions jobs passed 76 Python regressions and both packaged smoke scenarios. Inspect the linked run and its uploaded smoke JSON for measurements.",
+    "The rebuilt Windows checksum sidecar passed GNU sha256sum verification. Sidecars use LF on all platforms, with a regression assertion; the final workflow also verifies all archives together on Linux."
+  ],
+  "ci": [
+    {"target": "Windows x64", "status": "Passed native tests + both packaged scenarios", "details": "Windows 2022 / Python 3.12; ready in 3.328s, occupied-port run 3.312s."},
+    {"target": "Linux x64", "status": "Passed native tests + both packaged scenarios", "details": "Ubuntu 22.04 / Python 3.12; ready in 2.031s, occupied-port run 2.039s."},
+    {"target": "macOS Intel", "status": "Passed native tests + both packaged scenarios", "details": "macOS 15 Intel / Python 3.12; ready in 4.000s, occupied-port run 4.654s."},
+    {"target": "macOS Apple Silicon", "status": "Passed native tests + both packaged scenarios", "details": "macOS 15 ARM / Python 3.12; ready in 1.948s, occupied-port run 1.964s."}
+  ],
+  "links": {
+    "Tracking issue #7": "https://github.com/DupeisTaken/staff2audio/issues/7",
+    "Pull request #8": "https://github.com/DupeisTaken/staff2audio/pull/8",
+    "Native smoke evidence": "https://github.com/DupeisTaken/staff2audio/actions/runs/42032664568",
+    "Latest PR checks": "https://github.com/DupeisTaken/staff2audio/pull/8/checks",
+    "Repository": "https://github.com/DupeisTaken/staff2audio",
+    "PyInstaller design": "https://pyinstaller.org/en/stable/operating-mode.html",
+    "GitHub runner reference": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners"
+  },
+  "limitations": [
+    "Unsigned executables: Windows SmartScreen/macOS Gatekeeper approval can be required. Managed devices may require signing. Apple notarization and platform signing need maintainer credentials.",
+    "macOS ships a terminal executable, not an installable .app or DMG. Keep the console open and use Ctrl+C to stop; closing a browser tab alone does not stop the service.",
+    "Windows 10/11 x64, macOS 15+ Intel/Apple Silicon and glibc 2.35+ Linux x64 are the intended targets. Older OS versions, Alpine/musl, Linux ARM and Windows ARM are not validated targets.",
+    "One-file startup extracts bundled runtime assets to writable temporary storage. Linux noexec temporary directories require an executable TMPDIR.",
+    "The system browser and normal OS libraries remain prerequisites. Offline operation does not describe unrelated browser/OS network behavior.",
+    "No workspace UI/audio behavior was changed; interactive playback and old-OS compatibility were not newly certified by these packaged HTTP checks.",
+    "One existing FastAPI/Starlette TestClient deprecation warning remains in the local Python suite. It does not affect packaged runtime smoke checks.",
+    "No release tag was created; tagged release publication is configured for maintainers after review."
+  ]
+}

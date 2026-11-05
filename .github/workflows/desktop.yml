@@ -1,0 +1,131 @@
+name: Desktop executables
+
+on:
+  pull_request:
+    paths:
+      - '**.py'
+      - 'static/**'
+      - 'staff2audio/assets/**'
+      - 'requirements*.txt'
+      - 'Prima.spec'
+      - 'docs/desktop-quickstart.txt'
+      - '.github/workflows/desktop.yml'
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  javascript:
+    name: Browser logic regressions
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test tests/*.test.mjs
+      - run: node --check static/app.js
+
+  build:
+    name: Build and exercise ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - os: windows-2022
+            target: windows-x64
+            executable: Prima.exe
+          - os: ubuntu-22.04
+            target: linux-x64
+            executable: Prima
+          - os: macos-15-intel
+            target: macos-x64
+            executable: Prima
+          - os: macos-15
+            target: macos-arm64
+            executable: Prima
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: 'requirements*.txt'
+      - name: Install locked build and test dependencies
+        run: python -m pip install -r requirements-build.txt -r requirements-dev.txt -c requirements-lock.txt
+      - name: Python regressions
+        run: python -m pytest -q
+      - name: Build one executable with offline assets
+        run: python -m tools.build_desktop
+      - name: Exercise executable without a Python PATH or project directory
+        run: python -m tools.smoke_desktop dist/${{ matrix.executable }} --output build/smoke.json
+      - name: Exercise occupied default port
+        run: python -m tools.smoke_desktop dist/${{ matrix.executable }} --fallback --output build/smoke-fallback.json
+      - name: Archive executable and write SHA-256
+        run: python -m tools.package_desktop --target ${{ matrix.target }}
+      - name: Upload release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: Prima-${{ matrix.target }}
+          path: release/*
+          if-no-files-found: error
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ matrix.target }}
+          path: |
+            build/smoke*.json
+            build/pyinstaller/Prima/warn-Prima.txt
+          if-no-files-found: ignore
+
+  verify-archives:
+    name: Verify all distributed archive checksums
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Prima-*
+          path: release
+          merge-multiple: true
+      - name: Verify every platform archive on Linux
+        working-directory: release
+        run: sha256sum --check ./*.sha256
+
+  release:
+    name: Publish verified tagged release
+    needs: [verify-archives, javascript]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Prima-*
+          path: release
+          merge-multiple: true
+      - name: Verify archives and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd release
+          sha256sum --check ./*.sha256
+          gh release create "$RELEASE_TAG" ./* --verify-tag --generate-notes --title "Prima $RELEASE_TAG" --notes-file ../docs/desktop-quickstart.txt
