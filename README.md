@@ -96,6 +96,8 @@ Create the original demo fixture with `.venv\Scripts\python.exe -m tools.generat
 
 The [standalone HTML report](docs/implementation-report.html) embeds desktop/mobile screenshots, a rendered piano example, test results, issue/PR links, independent review scores and remaining limits. The separate reviewer rated all eight documented dimensions above 9.5/10, with a minimum of 9.6; see [the assessment and its evidence limits](docs/final-review.json). The ratings apply to the clean printed monophonic scope and are not a transcription-accuracy percentage. The supplied private PDF and extracted score data are excluded from Git and the report.
 
+The subsequent tempo and key-aware naming refinement has its own [independent assessment](docs/tempo-review.md), also above 9.5 in every dimension. The original recognition review is retained as baseline evidence.
+
 ## Licenses and attribution
 
 The application is distributed under **GNU AGPL version 3**; see [LICENSE](LICENSE). PDF support uses [PyMuPDF](https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright), which is offered under AGPL or a commercial license. Its AGPL obligations matter when modifying, distributing, or serving a derivative application; retaining the package name or a notice alone does not replace those obligations. Review the actual licenses for your intended distribution.

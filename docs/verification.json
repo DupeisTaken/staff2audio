@@ -1,6 +1,6 @@
 {
   "python_tests": 39,
-  "node_tests": 54,
+  "node_tests": 95,
   "minimum_review": "9.6 / 10",
   "checks": [
     {
@@ -13,11 +13,11 @@
     },
     {
       "name": "Piano and notation editing",
-      "result": "54 JavaScript tests passed (15 piano + 39 notation), with fake-clock lifecycle, MIDI/WAV structure, all key signatures in both clefs, explicit/inherited naturals, manual edits and roundtrips."
+      "result": "95 JavaScript tests passed: 15 piano, 39 notation editing, 17 tempo, and 24 note naming. Independent cases cover all 15 key signatures, written/enharmonic octaves, beat-relative density, transport, and export conversion."
     },
     {
       "name": "Final local checks",
-      "result": "python -m pytest -q: 39 passed in 6.96s, with one upstream Starlette TestClient/httpx deprecation warning. node --test tests/*.test.mjs: 54 passed, zero failures. JavaScript syntax and Python compilation checks passed. GitHub Actions Windows/Python 3.12 checks also passed."
+      "result": "The complete JavaScript suite passes 95 tests with zero failures. GitHub Actions on feature commit dea0f2a passes the full 39 Python and 95 JavaScript checks in both runs. JavaScript syntax checks pass."
     },
     {
       "name": "PDF decoder integration regression",
@@ -26,11 +26,27 @@
     {
       "name": "Launcher",
       "result": "The documented Windows .\\start.ps1 -NoBrowser -Port 8767 started successfully, returned local health 200, and its task-owned test server was stopped. The main app remains available on 127.0.0.1:8765."
+    },
+    {
+      "name": "Practice defaults and manual choices",
+      "result": "Actual UI: ordinary 4/4 starts at 72 quarter-note BPM; dense 6/8 starts at 40 dotted-quarter BPM. Manual 65 survives a rhythm edit while the range updates to 48–60; Use suggested applies 56 and resetting notes restores automatic 72. Manual 42 survives PDF page navigation; opening a different score resets its defaults."
+    },
+    {
+      "name": "Scale-aware note names",
+      "result": "Actual marker and review labels show G-sharp 4 in A major and E-flat 4 in B-flat major; the supplied PDF retains written E-sharp 3. All 15 signatures, naturals, octave boundaries, double accidentals, manual edits, and whole-octave spelling are covered by independent helper tests."
+    },
+    {
+      "name": "Compound export timing",
+      "result": "A real six-quarter-beat WAV at dotted-quarter 40 lasts 6.16 seconds including release. MIDI encodes 1,000,000 microseconds per quarter, equal to quarter 60. Manual dotted-quarter 45 encodes 888,889 microseconds, equal to quarter 67.5. Browser loop/live tempo/transpose/pause/stop checks pass."
+    },
+    {
+      "name": "Tempo and audition regression checks",
+      "result": "A stopped seek at beat 7.95 retains its target and 0:07 time at quarter 60 after tempo/transposition changes. Changing transpose during a first-load audition cancels the old pitch and stale highlight. Paused transposition preserves Resume. Desktop/mobile scrollWidth equals clientWidth: 1425/375 pixels respectively."
     }
   ],
   "private_score_summary": "The complete six-page supplied PDF was processed locally at a 2,600-pixel long edge: 36 staves and 717 note events in 16.6 seconds total. The independent reviewer visually checked 13 complete staves / 258 events across all six pages, including all 97 notes and rhythms on the last page. All identified flag, sharp, false-rest and key errors were repaired. This does not mean all 717 events were manually verified or guarantee accuracy for arbitrary scores.",
-  "audio_summary": "Actual browser MP3 decoding and downloads were exercised. The final edited D4/bass-clef phrase rendered as stereo 44.1 kHz 16-bit PCM, 5.8267 seconds for 8.5 beats at 90 BPM plus release, nonzero RMS 0.00946 and a strongest FFT bin near 293 Hz, consistent with D4. The MIDI download has a format-0 header and 480 ticks per quarter note. Device speaker listening was not independently measured.",
-  "browser_summary": "Final real local-server checks covered normalized PDF upload (six pages, restored nineteenth half note on the first staff), page-six selection, image paste, desktop and 390-pixel mobile layouts, note/rest and fractional-rhythm edits, clef/key overrides, manual-pitch preservation, MIDI/WAV downloads, play/pause/seek/staff-switch/stop, and keyboard file upload. Desktop and mobile document scrollWidth matched clientWidth. English is the only implemented language.",
+  "audio_summary": "The embedded synthetic edited baseline phrase was rendered at 90 quarter-note BPM: stereo 44.1 kHz, 16-bit PCM, 5.8267 seconds, RMS 0.00946 and a strongest FFT bin near 293 Hz (D4). For the new tempo behavior, a six-quarter-beat compound phrase at dotted-quarter 40 rendered 6.16 seconds with matching MIDI quarter 60; dotted-quarter 45 exported MIDI quarter 67.5. Physical speaker output was not instrumented.",
+  "browser_summary": "Updated real-server checks cover automatic ranges and beat units, remembered manual tempos within and across PDF pages, rhythm edits and Auto reset, key-specific sharp/flat labels, stopped seek clocks, audition cancellation after transposition, live tempo/transpose in a loop, and actual compound MIDI/WAV downloads. The supplied PDF is left loaded on page 1 with automatic quarter-note 72. English is the only implemented language.",
   "limitations": [
     "Recognition is an editable heuristic draft for clean, level, printed monophonic treble/bass staves. High reading confidence does not guarantee transcription accuracy.",
     "Handwriting, perspective photos, dense/chordal notation, multiple voices, ties, tuplets, repeats, grace notes and expressive performance are not reliably interpreted. Phrase slurs are ignored; ties require manual consolidation.",
@@ -44,42 +60,42 @@
     {
       "dimension": "Input and local operation",
       "score": 9.7,
-      "evidence": "Content-based in-memory image/PDF decoding, bounded uploads and pixels, EXIF/alpha handling, six-page selection and local assets are implemented and covered by 26 decoder/API tests. Actual PDF decoder output matches all six evaluated rasters, and the final browser restores the nineteenth first-staff note. Initial dependency installation requires internet."
+      "evidence": "The previously reviewed bounded local image/PDF decoder and upload paths are unchanged. Tempo choices are browser-local and keyed by page/staff within the active score; a failed new upload preserves the previous score and choices. Lead browser verification retained manual dotted-quarter 42 through PDF page navigation."
     },
     {
       "dimension": "Staff, clef and key recognition",
       "score": 9.6,
-      "evidence": "The supplied six-page PDF produces 36 independent staves. Independent visual review sampled every page, both clefs and multiple sharp/flat keys, and confirmed the repaired two-sharp signature. Synthetic fixtures and real-page spot checks support the documented clean printed monophonic scope; this is not a calibrated arbitrary-score accuracy estimate."
+      "evidence": "Recognition is unchanged from the prior independent review of 36 staves and representative source passages. The refinement uses the recognized meter/key without altering geometry or MIDI. Actual browser checks preserve a written E-sharp 3 from the supplied PDF; no broader recognition accuracy claim is added."
     },
     {
       "dimension": "Pitch, accidentals and timing",
       "score": 9.6,
-      "evidence": "Independent visual comparison covered 13 complete staff sequences totaling 258 pitch/duration events across all six pages, plus targeted passages; all match the final arrays. This includes all 97 final-page notes, written sharps/naturals, ledger notes, dots and subdivisions. All 717 events agree between evaluated rasters and actual PDF decoder inputs; all 717 were not manually transcribed."
+      "evidence": "Twenty-four note-name tests independently specify all 15 keys, explicit accidentals, stale/manual metadata, scientific-octave crossings, octave shifts and clamping. Reviewer reran them successfully. New key-aware G-sharp/E-flat labels and preserved E-sharp spelling match browser evidence; naming does not change MIDI or score durations."
     },
     {
       "dimension": "Grand piano and transport",
       "score": 9.7,
-      "evidence": "Actual browser decoding loaded all 88 local grand-piano samples; 15 audio tests cover clock scheduling, pause/resume, cancellation, seek, loops and exports. Lead browser evidence verifies transport and persistent highlighting after audition. Reviewer independently measured stereo 44.1 kHz/16-bit PCM: 5.8267 seconds, RMS 0.00946 and a dominant first-second component near D4. Physical speaker output was not instrumented."
+      "evidence": "Display pulse BPM converts once to quarter BPM for playback, clocks, WAV and MIDI. Reviewer directly inspected actual downloads: dotted-quarter 40 encodes 1,000,000 microseconds/quarter and a six-quarter-beat WAV lasts 6.16 seconds; manual dotted-quarter 45 encodes 888,889. Loop/live tempo/transpose and pause/stop browser checks pass; superseded auditions are canceled."
     },
     {
       "dimension": "Integrated practice experience",
       "score": 9.7,
-      "evidence": "Real browser checks exercised keyboard PDF upload, screenshot paste, page/staff selection, fractional lengths, pitch/rest corrections, clef/key overrides, manual-pitch preservation and actual MIDI/WAV downloads. Cross-staff seek and stale audition regressions were verified fixed. Source confirms a WAV export guard and captured staff filename prevent duplicate offline renders and wrong naming."
+      "evidence": "Lead browser evidence verifies automatic 72 quarter-note BPM and dense 40 dotted-quarter BPM, manual 65 surviving rhythm edits, refreshed 48–60 recommendation, Use suggested at 56, reset automatic 72, and manual 42 across PDF pages. Independent source review confirms applied tempo is distinct from unfinished input and both reported stopped-seek/audition races are repaired."
     },
     {
       "dimension": "Responsive UI and accessibility",
       "score": 9.6,
-      "evidence": "Final real-server desktop, mobile and mobile-review screenshots show a coherent layout, focused score, usable transport and scrollable correction dialog. Measured document/client widths match without overflow. Keyboard upload/shortcut fixes and meaningful secondary-text contrast are verified. English is the only language; this was not a formal assistive-technology certification."
+      "evidence": "Reviewer inspected refreshed desktop/mobile screenshots with visible pulse symbols, textual beat/range explanation and Use suggested control. Lead measured no horizontal overflow at 1425/375 pixels. Pitch aria-labels expand accidentals to words; note markers/review preserve written names and keyboard labels follow key context. English only; no formal assistive-technology certification claimed."
     },
     {
       "dimension": "Robustness, contracts and regression protection",
       "score": 9.7,
-      "evidence": "Final evidence records 39 Python and 54 JavaScript tests passing; GitHub CLI independently confirms both checks on commit 50e896c succeeded. Reviewer independently ran 39 notation tests and inspected their independent expectations. Source review covers atomic reinterpretation, metadata, manual/rest preservation, bounded decoding, cancellation and export ownership. PDF raster integration has regression coverage."
+      "evidence": "Reviewer independently ran the final 41 new helper tests, all passing; the lead's complete JavaScript suite reports 95 passes. Seventeen tempo cases cover beat-relative density, simple/compound factors, invalid input, rounding, engine-compatible bounds and steady staff timing. Both full CI runs on feature commit dea0f2a subsequently passed 39 Python and 95 JavaScript checks."
     },
     {
       "dimension": "Delivery, privacy and maintainability",
       "score": 9.6,
-      "evidence": "Setup, architecture, scope, audio semantics and retained licenses are documented. Tracked-file inspection excludes private PDF/renders/results, environments and caches. Issues 1 and 2 link to ready-for-review PR 3. Reviewer independently inspected the completed standalone HTML and final render: all eight ratings, four embedded synthetic screenshots, one embedded PCM preview, no external media dependencies and no obsolete pending-assessment text."
+      "evidence": "Focused pure tempo/naming helpers and owning documentation explain practice defaults, beat conversions, enharmonic spelling, and limits. Original independent-review files are preserved. The updated standalone report includes synthetic screenshots, measured export evidence, the refinement assessment, and issue/PR links."
     }
   ]
 }
