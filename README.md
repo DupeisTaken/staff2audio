@@ -87,6 +87,10 @@ Node 24 or newer is recommended for JavaScript tests and the optional sample-bun
 
 Create the original demo fixture with `.venv\Scripts\python.exe -m tools.generate_fixtures` (writes `tmp/demo-score.png`). Rebuild the included audio bundle, only when intentionally maintaining assets, with `node tools/audio-bundle.mjs`. That tool downloads the pinned upstream revision, checks SHA-256, and extracts literal MP3 strings without executing downloaded code. Normal playback never runs it or fetches its upstream URL.
 
+## Verification report
+
+The [standalone HTML report](docs/implementation-report.html) embeds desktop/mobile screenshots, a rendered piano example, test results, issue/PR links, independent review scores and remaining limits. The separate reviewer rated all eight documented dimensions above 9.5/10, with a minimum of 9.6; see [the assessment and its evidence limits](docs/final-review.json). The ratings apply to the clean printed monophonic scope and are not a transcription-accuracy percentage. The supplied private PDF and extracted score data are excluded from Git and the report.
+
 ## Licenses and attribution
 
 The application is distributed under **GNU AGPL version 3**; see [LICENSE](LICENSE). PDF support uses [PyMuPDF](https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright), which is offered under AGPL or a commercial license. Its AGPL obligations matter when modifying, distributing, or serving a derivative application; retaining the package name or a notice alone does not replace those obligations. Review the actual licenses for your intended distribution.

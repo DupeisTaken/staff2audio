@@ -1,7 +1,7 @@
 {
   "python_tests": 39,
   "node_tests": 54,
-  "minimum_review": "Pending",
+  "minimum_review": "9.6 / 10",
   "checks": [
     {
       "name": "Recognition",
@@ -22,9 +22,13 @@
     {
       "name": "PDF decoder integration regression",
       "result": "Actual app.decode_score images for all six supplied PDF pages are pixel-identical to the evaluated 2,600-pixel rasters; all 717 MIDI/duration events match the saved evaluation. A regression test fixes the normalized PDF raster dimensions."
+    },
+    {
+      "name": "Launcher",
+      "result": "The documented Windows .\\start.ps1 -NoBrowser -Port 8767 started successfully, returned local health 200, and its task-owned test server was stopped. The main app remains available on 127.0.0.1:8765."
     }
   ],
-  "private_score_summary": "The complete six-page supplied PDF was processed locally at a 2,600-pixel long edge: 36 staves and 717 note events in 16.6 seconds total. The independent reviewer visually checked complete phrases plus targeted accidental/rhythm passages, including all 97 notes and rhythms on the last page. All identified flag, sharp, false-rest and key errors were repaired. This is not a claim that all 717 events were manually verified or that arbitrary scores have the same accuracy.",
+  "private_score_summary": "The complete six-page supplied PDF was processed locally at a 2,600-pixel long edge: 36 staves and 717 note events in 16.6 seconds total. The independent reviewer visually checked 13 complete staves / 258 events across all six pages, including all 97 notes and rhythms on the last page. All identified flag, sharp, false-rest and key errors were repaired. This does not mean all 717 events were manually verified or guarantee accuracy for arbitrary scores.",
   "audio_summary": "Actual browser MP3 decoding and downloads were exercised. The final edited D4/bass-clef phrase rendered as stereo 44.1 kHz 16-bit PCM, 5.8267 seconds for 8.5 beats at 90 BPM plus release, nonzero RMS 0.00946 and a strongest FFT bin near 293 Hz, consistent with D4. The MIDI download has a format-0 header and 480 ticks per quarter note. Device speaker listening was not independently measured.",
   "browser_summary": "Final real local-server checks covered normalized PDF upload (six pages, restored nineteenth half note on the first staff), page-six selection, image paste, desktop and 390-pixel mobile layouts, note/rest and fractional-rhythm edits, clef/key overrides, manual-pitch preservation, MIDI/WAV downloads, play/pause/seek/staff-switch/stop, and keyboard file upload. Desktop and mobile document scrollWidth matched clientWidth. English is the only implemented language.",
   "limitations": [
@@ -33,9 +37,49 @@
     "Staves play independently; the app does not infer multi-staff instrument parts or join systems. A key signature alone does not determine major versus minor mode.",
     "Uploads are bounded to 25 MiB and raster images to 30 megapixels; processed images have a 2,600-pixel long-edge limit. Local process/browser memory and operating-system swap remain outside application storage controls.",
     "Audio needs a browser gesture and can be suspended by background/locked-device policies. WAV is limited to ten minutes; transport is limited to thirty minutes and 20,000 events.",
-    "The server is intended for loopback use. It has no public-hosting authentication or deployment hardening. Initial dependency installation needs internet access.",
-    "Final independent acceptance and full integrated checks are pending in this draft report."
+    "The server is intended for loopback use. It has no public-hosting authentication or deployment hardening. Initial dependency installation needs internet access."
   ],
   "pr_url": "https://github.com/DupeisTaken/staff2audio/pull/3",
-  "review": []
+  "review": [
+    {
+      "dimension": "Input and local operation",
+      "score": 9.7,
+      "evidence": "Content-based in-memory image/PDF decoding, bounded uploads and pixels, EXIF/alpha handling, six-page selection and local assets are implemented and covered by 26 decoder/API tests. Actual PDF decoder output matches all six evaluated rasters, and the final browser restores the nineteenth first-staff note. Initial dependency installation requires internet."
+    },
+    {
+      "dimension": "Staff, clef and key recognition",
+      "score": 9.6,
+      "evidence": "The supplied six-page PDF produces 36 independent staves. Independent visual review sampled every page, both clefs and multiple sharp/flat keys, and confirmed the repaired two-sharp signature. Synthetic fixtures and real-page spot checks support the documented clean printed monophonic scope; this is not a calibrated arbitrary-score accuracy estimate."
+    },
+    {
+      "dimension": "Pitch, accidentals and timing",
+      "score": 9.6,
+      "evidence": "Independent visual comparison covered 13 complete staff sequences totaling 258 pitch/duration events across all six pages, plus targeted passages; all match the final arrays. This includes all 97 final-page notes, written sharps/naturals, ledger notes, dots and subdivisions. All 717 events agree between evaluated rasters and actual PDF decoder inputs; all 717 were not manually transcribed."
+    },
+    {
+      "dimension": "Grand piano and transport",
+      "score": 9.7,
+      "evidence": "Actual browser decoding loaded all 88 local grand-piano samples; 15 audio tests cover clock scheduling, pause/resume, cancellation, seek, loops and exports. Lead browser evidence verifies transport and persistent highlighting after audition. Reviewer independently measured stereo 44.1 kHz/16-bit PCM: 5.8267 seconds, RMS 0.00946 and a dominant first-second component near D4. Physical speaker output was not instrumented."
+    },
+    {
+      "dimension": "Integrated practice experience",
+      "score": 9.7,
+      "evidence": "Real browser checks exercised keyboard PDF upload, screenshot paste, page/staff selection, fractional lengths, pitch/rest corrections, clef/key overrides, manual-pitch preservation and actual MIDI/WAV downloads. Cross-staff seek and stale audition regressions were verified fixed. Source confirms a WAV export guard and captured staff filename prevent duplicate offline renders and wrong naming."
+    },
+    {
+      "dimension": "Responsive UI and accessibility",
+      "score": 9.6,
+      "evidence": "Final real-server desktop, mobile and mobile-review screenshots show a coherent layout, focused score, usable transport and scrollable correction dialog. Measured document/client widths match without overflow. Keyboard upload/shortcut fixes and meaningful secondary-text contrast are verified. English is the only language; this was not a formal assistive-technology certification."
+    },
+    {
+      "dimension": "Robustness, contracts and regression protection",
+      "score": 9.7,
+      "evidence": "Final evidence records 39 Python and 54 JavaScript tests passing; GitHub CLI independently confirms both checks on commit 50e896c succeeded. Reviewer independently ran 39 notation tests and inspected their independent expectations. Source review covers atomic reinterpretation, metadata, manual/rest preservation, bounded decoding, cancellation and export ownership. PDF raster integration has regression coverage."
+    },
+    {
+      "dimension": "Delivery, privacy and maintainability",
+      "score": 9.6,
+      "evidence": "Setup, architecture, scope, audio semantics and retained licenses are documented. Tracked-file inspection excludes private PDF/renders/results, environments and caches. Issues 1 and 2 link to ready-for-review PR 3. Reviewer independently inspected the completed standalone HTML and final render: all eight ratings, four embedded synthetic screenshots, one embedded PCM preview, no external media dependencies and no obsolete pending-assessment text."
+    }
+  ]
 }

@@ -1,38 +1,69 @@
-# Independent review findings
+# Independent final review
 
-Review status: **in progress, no final acceptance decision**. Reviewed the integrated working tree by source inspection and the real dev-server desktop screenshot at `docs/screenshots/desktop.jpg`. No browser automation or heavy recognition tests were run by this reviewer during concurrent lead-agent browser QA and recognition tuning.
+**Accepted within the documented clean printed monophonic scope. Every dimension exceeds 9.5/10; the minimum is 9.6.**
 
-## Findings and follow-up
+Reviewed application commit: `50e896c6ea7835715ded58ff9e644b0865d670e3`, 5 November 2026. Machine-readable rows are in `docs/final-review.json`. **Final artifact closure is complete:** the standalone report contains all eight ratings, its obsolete assessment placeholder is removed, and its final render has been inspected. Subsequent behavioral changes require reassessment.
 
-| Finding | Evidence and consequence | Status |
-| --- | --- | --- |
-| Cross-staff seek reused the preceding performance | `selectStaff()` stopped the player without changing its stored events/duration. The original slider handler called `player.seek()` whenever stored events existed, causing a newly selected longer staff to be clamped to the preceding duration. | Lead changed the handler to seek the player only while paused/playing. Source reinspection supports the fix; integrated regression check pending. |
-| Audition highlight could interrupt a later performance | The 650 ms preview timer survived Play, and the asynchronous preview wrapper could highlight an old note after a stop or staff switch. | Lead added a sound-action token, timer cancellation and shared `stopPlayback()`. Source reinspection supports the fix; browser transition check pending. |
-| Upload entry was unreachable from keyboard | The file input was hidden and the associated label was not focusable. | Lead added a focusable upload label with Enter/Space handling and reports adding a global `defaultPrevented` guard. Browser keyboard regression check pending. |
-| Note/rest editing retained stale row controls | Pitch changes updated the event but did not rebuild the row's Read badge or Hear disabled state. | Lead now rerenders the review list after pitch changes. Source reinspection supports the fix. |
-| Meaningful small text had insufficient contrast | Computed normal-text contrast against `#fffefa` was approximately 2.92:1 for `#929987`, 3.85:1 for `#7c8474`, 3.33:1 for `#849078` and 4.42:1 for `#747970`. Many of these colors styled functional labels, times and help text. | Source now overrides meaningful secondary text with `#626d5b`, above 4.5:1 against the relevant cream/white backgrounds. Final screenshot audit pending. |
-| Credits link initially returned no file | `static/THIRD_PARTY_NOTICES.txt` was absent when linked by the guide. | File now exists. Source reinspection confirms the link target; HTTP check pending. |
-| Seek error promise was not handled | Playing-state `player.seek()` can reject if audio resume/load fails. The slider listener originally discarded the promise. | Lead reports adding rejection handling; error-recovery check pending. |
-| Staff navigation could re-enable an in-progress WAV export | The export click handler disabled its button, but `enableControls()` did not track export state. Selecting another staff could enable a second large offline render, and the eventual filename used the newly selected staff number. | Reported to lead. A separate export-in-progress flag and captured output filename are needed to bound concurrent audio work and preserve staff identity. |
+Scores describe implementation quality within the stated scope and the evidence inspected. They are not transcription accuracy percentages, a benchmark for arbitrary music, a guarantee that every clean score is correct, or a claim that every browser/device was tested.
 
-## Recognition evidence
+## Scores
 
-The reviewer independently read an existing local render of one supplied-PDF page and compared it with the existing event JSON. The early snapshot correctly found all six staves, their treble/bass clefs, key signatures and meters. On the first treble staff, all 19 pitch values matched visual ground truth. Three spot-checked isolated flagged eighth notes across treble and bass were incorrectly assigned a quarter-note duration. The engine's measure warnings identified the resulting rhythm mismatches.
+| Dimension | Score | Evidence |
+| --- | ---: | --- |
+| Input and local operation | 9.7/10 | Real image/PDF decode; 26 API/boundary tests; bounded in-memory uploads; page selection; actual decoder images match the evaluated rasters; local assets. |
+| Staff, clef and key recognition | 9.6/10 | Six pages and 36 staves processed; independent visual sampling on every page, both clefs and multiple signatures; repaired two-sharp key verified. |
+| Pitch, accidentals and timing | 9.6/10 | Thirteen complete staff sequences / 258 pitch-duration pairs independently compared, plus targeted passages; all match final arrays, including all 97 final-page events. |
+| Grand piano and transport | 9.7/10 | Actual 88-sample decode; 15 audio tests; browser transport evidence; independently measured non-silent PCM with expected format, duration and D4-frequency content. |
+| Integrated practice experience | 9.7/10 | Real upload/paste, page/staff selection, corrections, overrides and downloads; seek/audition regressions verified fixed; export concurrency guarded. |
+| Responsive UI and accessibility | 9.6/10 | Final desktop/mobile/dialog screenshots; no measured horizontal overflow; keyboard upload and shortcut handling; corrected meaningful secondary-text contrast. |
+| Robustness, contracts and regression protection | 9.7/10 | 39 Python + 54 JavaScript tests pass; independent notation-test run; both CI checks independently confirmed successful; source/lifecycle review and PDF integration regression. |
+| Delivery, privacy and maintainability | 9.6/10 | Setup/design/scope/license docs; tracked private-data exclusions; issues and ready PR; standalone HTML media inspected. |
 
-The updated first-page event JSON independently passes the three previously failing duration spot-checks. Its entire first staff matches the reviewer's independent 19-event pitch/duration reading; sampled accidental and rhythm passages on two bass staves also match. On a later page, another complete 21-event treble staff matched pitch and duration ground truth.
+## Independence and evidence provenance
 
-The subsequent final-page snapshot corrects all three missed sharps. The reviewer visually compared all five staves and all 97 note pitches/durations on that page against the regenerated event arrays; the clefs, keys, meters, natural cancellation, dotted rhythms, ledger notes and subdivisions matched. A later-page spurious rest was also removed and the previously failed bass eighth note corrected. One later-page isolated eighth note still required correction in the 15:50 local snapshot; the recognition agent is also checking key-count and barline-grouping issues elsewhere.
+The reviewer defined `docs/review-rubric.md` before final assessment, inspected implementation and test expectations, and reported concrete failures for repair. Owning agents implemented fixes. The reviewer did not edit application code or tests and made no commits.
 
-Measure totals alone cannot establish correctness because pitch errors and compensating duration errors can remain undetected. Private renders and event-level score excerpts remain in ignored local storage and are excluded from public review artifacts.
+To keep the desktop responsive, heavy recognition and browser work was serialized by the lead. This reviewer independently inspected real screenshots, local result artifacts, implementation source, exported PCM and report structure. Browser actions and final combined-suite execution are lead-produced evidence in `docs/verification.json`; they are not represented as personally executed by this reviewer.
 
-## Positive observations
+Independent execution: `node --test tests/score.test.mjs` — **39 passed, zero failed**, approximately 198 ms. Independent expectations cover all 15 key signatures in both clefs, round trips, explicit/inherited accidentals, manual/rest preservation, clamping and atomic invalid-input handling. Final combined evidence records **39 Python tests** (13 OMR + 26 decoder/API) and **54 JavaScript tests** (15 audio + 39 notation). GitHub CLI independently confirmed both checks for the reviewed commit completed successfully. An upstream Starlette/httpx deprecation warning is disclosed and does not fail the tests.
 
-- The desktop screenshot shows a coherent hierarchy, readable score display, clear transport grouping, and no visible overlap.
-- The mobile screenshot shows coherent stacked panels and accessible placement of the staff-focus control; final updated contrast and overflow/keyboard behavior still require integrated checks.
-- Upload processing is content based, decoded in memory, bounded by request/image limits, and offloaded from the async HTTP path. Recognition work is serialized.
-- Piano scheduling uses the Web Audio clock and invalidates pending starts. The existing tests exercise meaningful transport and export timing behavior using a fake audio clock; those tests alone do not prove actual device output.
-- The product calls recognition an editable draft and discloses the clean monophonic scope and major/relative-minor ambiguity.
-- Clef/key override source inspection supports use of diatonic staff positions and explicit/measure accidental sources while preserving manually edited pitches. Corrected metadata consistency and round-trip behavior remain review checks.
-- The extracted `static/score.js` helper updates pitch metadata atomically and includes independently specified tests for all 15 key signatures in both clefs, repeated changes, explicit/inherited accidentals, manual/rest preservation, clamping and malformed events. Source review found no new semantic blocker in this helper.
+## Repaired findings
 
-Final dimension scores will be recorded after the final implementation, affected automated checks, real desktop/mobile flows, real sample playback/export, private score spot-checks, issue/PR, and self-contained HTML report are available.
+| Finding | Final disposition |
+| --- | --- |
+| Cross-staff seek reused the preceding duration | UI seeks the player only during active/paused performance. Browser regression switched from a short bass staff to a longer treble staff and retained the new eight-beat end. |
+| Audition timer/pending completion overwrote later highlighting | Tokens and shared timer cleanup added. Browser audition-then-play regression retained a sustained-note highlight after approximately 15 seconds. |
+| Upload was inaccessible from keyboard; Space could also start playback | Focusable upload control, Enter/Space handling and global `defaultPrevented` guard added. Keyboard PDF upload succeeded. |
+| Pitch/rest editing left stale Hear/Read controls | Review rows update after pitch changes; integrated note/rest correction checks passed. |
+| Small meaningful text lacked contrast | Shared accessible secondary color added; source contrast calculations and final screenshots reviewed. |
+| Missing credits file and discarded seek-error promise | Notice file is present; seek rejection is caught and surfaced. |
+| Navigation re-enabled concurrent heavy WAV export and changed its filename | `state.exporting` guards handler/control state; output staff index is captured before rendering. Source verified. |
+| Isolated eighths near slurs were read as quarters | Flag/beam logic repaired; originally failing treble/bass cases and later-page final eighth independently rechecked. |
+| Written sharps were missed, including one high-confidence note | Accidental logic repaired; all three final-page failures and surrounding natural cancellation independently rechecked. |
+| Accidental produced a false rest; two-sharp key was counted as one | False event removed and key count corrected; affected final sequences independently compared with the source. |
+| Actual API PDF scaling differed from standalone evaluation and lost a note | Same bounded 2,600-pixel target now used, with a regression test. Actual decoder images match all six evaluated rasters and browser first-staff count is 19. |
+
+## Recognition verification and exact limits
+
+The private PDF was processed locally: six pages, 36 staves, 717 note events, approximately 16.6 seconds recorded total. The reviewer independently compared **13 complete staves / 258 note pitches and durations across all six pages**, plus targeted passages. These cover both clefs, sharp/flat keys, ledger notes, written/inherited accidentals, natural cancellation, dots, beams and flags. All matched the final arrays. All 97 events on the last page matched.
+
+The 717-event integration comparison establishes agreement between actual decoder inputs and evaluated rasters. **Not all 717 events were manually transcribed.** Measure totals alone were not accepted as correctness evidence: missed sharps were found despite valid totals. Low-confidence indications remain visible. Private renders, event excerpts and evaluation JSON remain ignored local files; public screenshots/report contain original synthetic notation.
+
+## Audio, interface and report checks
+
+The browser decoded all 88 local grand-piano recordings and exercised playback controls and downloads. Independent PCM inspection found stereo **44.1 kHz**, **16-bit**, **5.8266667 seconds**, RMS **0.0094568**, strongest first-second FFT component approximately **294 Hz**, consistent with D4. Duration agrees with 8.5 quarter-note beats at 90 BPM plus release. Physical device-speaker output was not instrumented. Fake-clock tests alone would not establish real sample decoding or non-silent output.
+
+Final desktop, narrow mobile and review-dialog screenshots were inspected. Lead measurements found matching scroll/client widths. Browser verification covered file upload, paste, fractional edits, clef/key overrides, manual pitches, note/rest controls, staff switching and persistent highlights. English is the only implemented language. This is not formal screen-reader or assistive-technology certification.
+
+The reviewer independently parsed the completed approximately **1.78 MB** standalone report: **all eight rating rows, four embedded synthetic screenshots, one embedded PCM item, zero external media dependencies**, and repository/two issue/PR links. No obsolete assessment placeholder remains. The reviewer inspected the final full-report render and found no material layout issue. Lead browser QA confirmed all images loaded, the inline audio played, and desktop/mobile document widths matched their scroll widths. Artifact closure is complete; the minimum score remains **9.6/10**.
+
+## Remaining product boundaries
+
+- Recognition is an editable heuristic draft for complete, level, sufficiently resolved printed monophonic treble/bass staves. High confidence does not guarantee correctness on another score or engraving style.
+- Handwriting, perspective images, dense/chordal notation, multiple voices, ties, tuplets, repeats, ornaments and expressive performance are outside reliable scope. Phrase slurs are ignored; ties need manual consolidation.
+- Staves play independently; systems and instrument relationships are not joined. A signature does not resolve major versus relative minor.
+- Limits are 25 MiB uploads, 30-megapixel raster inputs, 2,600-pixel processed long edge, ten-minute WAV exports, and thirty-minute / 20,000-event transport.
+- Browser gesture/background policies and physical speaker behavior are external constraints. Initial dependency installation uses internet; normal processing/audio are local.
+- Loopback is the deployment target. Public hosting/authentication and operating-system/browser memory or swap controls were outside this review.
+
+Links: [implementation issue #1](https://github.com/DupeisTaken/staff2audio/issues/1), [regression issue #2](https://github.com/DupeisTaken/staff2audio/issues/2), [ready-for-review PR #3](https://github.com/DupeisTaken/staff2audio/pull/3).
