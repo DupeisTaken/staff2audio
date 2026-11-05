@@ -1,5 +1,17 @@
-import { PianoPlayer, scoreDuration, tempoValue } from "./piano.js";
+import { PianoPlayer, scoreDuration } from "./piano.js";
 import { reinterpretStaff } from "./score.js";
+import {
+  recommendTempo,
+  toQuarterBpm,
+  fromQuarterBpm,
+  clampDisplayBpm,
+} from "./tempo.js";
+import {
+  pitchName,
+  eventName,
+  transposedKeySignature,
+  spokenPitchName,
+} from "./note-names.js";
 
 const $ = (id) => document.getElementById(id);
 const state = {
@@ -15,8 +27,10 @@ const state = {
   loop: false,
   changed: new Set(),
   controller: null,
+  tempoRecommendation: null,
+  tempoBpm: 72,
+  tempos: new Map(),
 };
-const names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
 const keyNames = [
   "C♭ / A♭ minor",
   "G♭ / E♭ minor",
@@ -34,13 +48,20 @@ const keyNames = [
   "F♯ / D♯ minor",
   "C♯ / A♯ minor",
 ];
-const noteName = (midi) =>
-  midi === null
-    ? "Rest"
-    : names[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
 const currentStaff = () => state.result?.staffs[state.selected];
+const effectiveKey = () =>
+  transposedKeySignature(
+    currentStaff()?.key_signature ?? 0,
+    Number($("transpose").value),
+  );
+const tempoProfile = () => state.tempoRecommendation || recommendTempo(null);
+const tempoKey = () =>
+  currentStaff()
+    ? `${state.result.page}:${currentStaff().id ?? state.selected}`
+    : null;
 const options = () => ({
-  tempo: tempoValue($("tempo").value),
+  // Score durations and the audio/export engine always use quarter-note beats.
+  tempo: toQuarterBpm(state.tempoBpm, tempoProfile().quarterNotesPerBeat),
   transpose: Number($("transpose").value),
   loop: state.loop,
 });
@@ -49,6 +70,64 @@ const clock = (beats) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 };
 let toastTimer, previewTimer;
+
+function renderTempoInfo() {
+  const profile = tempoProfile();
+  $("tempoUnit").textContent = `${profile.beatSymbol} BPM`;
+  $("tempo").setAttribute(
+    "aria-label",
+    `Tempo in ${profile.beatLabel} beats per minute`,
+  );
+  $("tempoRange").textContent =
+    `${profile.beatLabel} beat · suggested ${profile.minBpm}–${profile.maxBpm} BPM`;
+  $("tempoReason").textContent = state.tempos.has(tempoKey())
+    ? "Your tempo is saved for this staff. Use suggested to reset."
+    : `Auto start: ${profile.bpm} BPM. Adjust to your voice and the phrase.`;
+  $("tempoRecommendation").title = profile.reason;
+  $("autoTempoButton").disabled =
+    state.busy || !currentStaff() || !state.tempos.has(tempoKey());
+  $("tempoRecommendation").hidden = !currentStaff();
+}
+
+function refreshTempo() {
+  state.tempoRecommendation = recommendTempo(currentStaff());
+  const profile = tempoProfile(),
+    manual = state.tempos.get(tempoKey());
+  const displayBpm = manual
+    ? fromQuarterBpm(
+        toQuarterBpm(manual.bpm, manual.factor),
+        profile.quarterNotesPerBeat,
+      )
+    : profile.bpm;
+  state.tempoBpm = clampDisplayBpm(displayBpm, profile.quarterNotesPerBeat);
+  $("tempo").min = Math.ceil(30 / profile.quarterNotesPerBeat);
+  $("tempo").max = Math.floor(240 / profile.quarterNotesPerBeat);
+  $("tempo").value = state.tempoBpm;
+  renderTempoInfo();
+}
+
+function applyTempo(bpm, manual = true) {
+  const beat =
+      player.state === "stopped" ? Number($("seek").value) : player.currentBeat,
+    wasPlaying = player.state === "playing";
+  const previous = options().tempo;
+  state.tempoBpm = clampDisplayBpm(bpm, tempoProfile().quarterNotesPerBeat);
+  $("tempo").value = state.tempoBpm;
+  if (manual && currentStaff())
+    state.tempos.set(tempoKey(), {
+      bpm: state.tempoBpm,
+      factor: tempoProfile().quarterNotesPerBeat,
+    });
+  renderTempoInfo();
+  $("position").textContent = clock(beat);
+  $("totalTime").textContent = clock(
+    scoreDuration(currentStaff()?.events || []),
+  );
+  if (wasPlaying && previous !== options().tempo)
+    player
+      .play(currentStaff().events, { ...options(), fromBeat: beat })
+      .catch((error) => toast(error.message));
+}
 
 function toast(message) {
   $("toast").textContent = message;
@@ -104,7 +183,9 @@ function highlight(event) {
     document
       .querySelector(`.note-marker[data-event="${event.id}"]`)
       ?.classList.add("active");
-    $("currentNote").textContent = noteName(midi);
+    $("currentNote").textContent = event.keyboardPreview
+      ? pitchName(midi, effectiveKey())
+      : eventName(event, currentStaff(), { transpose: options().transpose });
   } else $("currentNote").textContent = "♪";
 }
 
@@ -118,9 +199,11 @@ async function preview(midi, event = null) {
     : "Preparing the local piano…";
   try {
     await player.preview(midi + (event ? options().transpose : 0));
-    if (token !== state.soundAction) return;
     $("audioStatus").textContent = "88 sampled keys · ready to play";
-    highlight(event || { midi: midi - options().transpose });
+    if (token !== state.soundAction) return;
+    highlight(
+      event || { midi: midi - options().transpose, keyboardPreview: true },
+    );
     clearTimeout(previewTimer);
     previewTimer = setTimeout(() => highlight(null), 650);
   } catch (error) {
@@ -143,10 +226,13 @@ function buildKeyboard() {
     key.type = "button";
     key.className = "piano-key";
     key.dataset.midi = midi;
-    key.setAttribute("aria-label", `Play ${noteName(midi)}`);
-    key.title = noteName(midi);
+    key.setAttribute(
+      "aria-label",
+      `Play ${spokenPitchName(pitchName(midi, effectiveKey()))}`,
+    );
+    key.title = pitchName(midi, effectiveKey());
     if (whites.includes(midi % 12)) {
-      key.textContent = midi % 12 === 0 ? noteName(midi) : "";
+      key.textContent = midi % 12 === 0 ? pitchName(midi, effectiveKey()) : "";
       count++;
     } else {
       key.classList.add("black");
@@ -155,6 +241,17 @@ function buildKeyboard() {
     key.addEventListener("click", () => preview(midi));
     $("keyboard").append(key);
   }
+}
+
+function refreshKeyboardNames() {
+  document.querySelectorAll(".piano-key").forEach((key) => {
+    const midi = Number(key.dataset.midi),
+      name = pitchName(midi, effectiveKey());
+    key.setAttribute("aria-label", `Play ${spokenPitchName(name)}`);
+    key.title = name;
+    if (!key.classList.contains("black"))
+      key.textContent = midi % 12 === 0 ? name : "";
+  });
 }
 
 function enableControls() {
@@ -173,6 +270,9 @@ function enableControls() {
   $("editButton").disabled = state.busy || !staff;
   $("viewButton").disabled = state.busy || !staff;
   $("pageSelect").disabled = state.busy;
+  $("tempo").disabled = state.busy || !staff;
+  $("autoTempoButton").disabled =
+    state.busy || !staff || !state.tempos.has(tempoKey());
   $("demoButton").disabled = state.busy;
   $("emptyDemoButton").disabled = state.busy;
   document.querySelectorAll(".staff-item").forEach((button) => {
@@ -219,6 +319,8 @@ function renderStaffs() {
 function selectStaff(index) {
   stopPlayback();
   state.selected = index;
+  refreshTempo();
+  refreshKeyboardNames();
   renderStaffs();
   renderScore();
   updateTiming();
@@ -267,8 +369,13 @@ function renderScore() {
   svg.setAttribute("viewBox", box.join(" "));
   // A minimum display height can letterbox a wide staff; clip in score units
   // so page titles and neighboring exercises cannot leak into that space.
-  const clip = svgElement("clipPath", { id: "scoreClip", clipPathUnits: "userSpaceOnUse" });
-  clip.append(svgElement("rect", { x: box[0], y: box[1], width: box[2], height: box[3] }));
+  const clip = svgElement("clipPath", {
+    id: "scoreClip",
+    clipPathUnits: "userSpaceOnUse",
+  });
+  clip.append(
+    svgElement("rect", { x: box[0], y: box[1], width: box[2], height: box[3] }),
+  );
   const drawing = svgElement("g", { "clip-path": "url(#scoreClip)" });
   svg.append(clip, drawing);
   drawing.append(
@@ -311,11 +418,11 @@ function renderScore() {
       "data-event": event.id,
       role: "button",
       tabindex: 0,
-      "aria-label": `Note ${index + 1}: ${noteName(event.midi)}, ${event.duration} beats. Activate to hear.`,
+      "aria-label": `Note ${index + 1}: ${spokenPitchName(eventName(event, staff))}, ${event.duration} beats. Activate to hear.`,
       "aria-haspopup": "false",
     });
     const title = svgElement("title", {});
-    title.textContent = `${index + 1} · ${noteName(event.midi)} · ${event.duration} beats${event.confidence < 0.75 ? " · Review" : ""}`;
+    title.textContent = `${index + 1} · ${eventName(event, staff)} · ${event.duration} beats${event.confidence < 0.75 ? " · Review" : ""}`;
     marker.append(title);
     const action = () => {
       if (event.midi === null) {
@@ -380,6 +487,7 @@ async function analyze(file = null, page = 1, demo = false) {
       throw new Error(
         "No complete staff was found. Include all five lines, keep the score level, and crop closer to the music.",
       );
+    if (demo || file !== state.file) state.tempos.clear();
     state.result = data;
     state.originals = structuredClone(data.staffs);
     state.selected = 0;
@@ -482,9 +590,11 @@ function edited() {
   for (const event of currentStaff().events) {
     event.onset = onset;
     onset += event.duration;
-    event.name = noteName(event.midi);
+    event.name = eventName(event, currentStaff());
   }
   state.changed.add(state.selected);
+  refreshTempo();
+  refreshKeyboardNames();
   renderStaffs();
   renderScore();
   updateTiming();
@@ -510,7 +620,9 @@ function renderReview() {
     pitch.setAttribute("aria-label", `Pitch for note ${index + 1}`);
     pitch.add(new Option("Rest", "rest"));
     for (let midi = 0; midi <= 127; midi++)
-      pitch.add(new Option(noteName(midi), midi));
+      pitch.add(new Option(pitchName(midi, staff.key_signature), midi));
+    if (event.midi !== null)
+      pitch.options[event.midi + 1].textContent = eventName(event, staff);
     pitch.value = event.midi === null ? "rest" : event.midi;
     pitch.addEventListener("change", () => {
       event.midi = pitch.value === "rest" ? null : Number(pitch.value);
@@ -664,20 +776,47 @@ $("seek").addEventListener("input", () => {
 $("volume").addEventListener("input", () =>
   player.setVolume(Number($("volume").value)),
 );
-for (const id of ["tempo", "transpose"])
-  $(id).addEventListener("change", () => {
-    $("tempo").value = tempoValue($("tempo").value);
-    const beat = player.currentBeat;
-    const wasPlaying = player.state === "playing";
-    if (wasPlaying)
-      player
-        .play(currentStaff().events, { ...options(), fromBeat: beat })
-        .catch((error) => toast(error.message));
-    $("position").textContent = clock(beat);
-    $("totalTime").textContent = clock(
-      scoreDuration(currentStaff()?.events || []),
-    );
-  });
+$("tempo").addEventListener("input", () => {
+  const value = Number($("tempo").value);
+  if (
+    $("tempo").value.trim() &&
+    Number.isInteger(value) &&
+    value >= Number($("tempo").min) &&
+    value <= Number($("tempo").max)
+  )
+    applyTempo(value);
+});
+$("tempo").addEventListener("change", () =>
+  applyTempo($("tempo").value.trim() ? $("tempo").value : state.tempoBpm),
+);
+$("autoTempoButton").addEventListener("click", () => {
+  state.tempos.delete(tempoKey());
+  applyTempo(tempoProfile().bpm, false);
+});
+$("transpose").addEventListener("change", () => {
+  const beat =
+    player.state === "stopped" ? Number($("seek").value) : player.currentBeat;
+  const wasPlaying = player.state === "playing";
+  state.soundAction++;
+  clearTimeout(previewTimer);
+  if (!wasPlaying) {
+    // Cancel an audition at its old pitch, retaining the transport's position.
+    if (player.state === "paused") player.pause();
+    else {
+      stopPlayback();
+      $("seek").value = beat;
+    }
+  }
+  refreshKeyboardNames();
+  if (wasPlaying)
+    player
+      .play(currentStaff().events, { ...options(), fromBeat: beat })
+      .catch((error) => toast(error.message));
+  $("position").textContent = clock(beat);
+  $("totalTime").textContent = clock(
+    scoreDuration(currentStaff()?.events || []),
+  );
+});
 $("editButton").addEventListener("click", () => {
   stopPlayback();
   renderReview();
@@ -787,4 +926,5 @@ document.addEventListener("keydown", (e) => {
 });
 window.addEventListener("pagehide", stopPlayback);
 buildKeyboard();
+refreshTempo();
 enableControls();

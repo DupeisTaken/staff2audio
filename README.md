@@ -37,10 +37,14 @@ If port 8765 is occupied, start `.venv\Scripts\python.exe -m uvicorn app:app --h
 1. Choose an image/PDF, drop one onto the upload area, paste a screenshot, or open the included example. For PDFs, choose a page from the page selector. Include the clef and key signature when cropping.
 2. Select a detected staff. Focus staff isolates its preview; Full page shows the source and selectable staff regions. Each staff plays independently, including staves with different clefs or key signatures.
 3. Click a detected note or an on-screen piano key to hear it. Review notes opens the pitch/rest and duration editor; you can change clef/key interpretation, add/delete events, and restore the selected staff's original detection. Corrections live only in the current browser session.
-4. Play/pause, resume, stop, loop, or drag the progress control to seek. Tempo is 30–240 quarter notes per minute; transposition shifts the performance by semitones. The volume slider affects playback and WAV export. Space toggles play/pause when focus is outside an editor/control.
+4. Play/pause, resume, stop, loop, or drag the progress control to seek. Each staff starts at a suggested sight-singing tempo based on meter and its fastest sounding note values. BPM counts the displayed beat unit: quarter notes in 4/4, dotted quarters in 6/8. Adjust it freely; your choice is remembered per page/staff for the current score, and **Use suggested** restores Auto. Transposition shifts the performance by semitones. The volume slider affects playback and WAV export. Space toggles play/pause when focus is outside an editor/control.
 5. Download MIDI for an editable sequence or WAV for the actual sampled piano sound. Both export the entire selected staff once with current corrections, tempo, and transposition. MIDI is rendered by the receiving player's instrument; WAV is stereo 44.1 kHz, 16-bit PCM. Retain the piano attribution when distributing rendered audio.
 
 The on-screen keyboard displays a central range; the local instrument contains all 88 piano keys, A0–C8. Pitches beyond this sample range use correctly pitched resampling of the nearest key. Very long held notes decay naturally rather than repeating an artificial sustain loop.
+
+Ordinary 4/4 passages start at **72 quarter-note BPM**, with a suggested 60–80 range; sixteenth-note passages start at **56**, with a 48–60 range. Ordinary 6/8 starts at **48 dotted-quarter BPM**, with a 40–56 range; sixteenths start at **40**, with a 36–44 range. Faster subdivisions scale the suggestion further. These are adjustable practice choices, not inferred printed markings or an examination standard. One steady tempo applies to the whole staff. See [the tempo policy, beat conversions and limits](docs/tempo.md).
+
+Recognized note labels preserve written sharps, flats, naturals and octave spelling. Edited pitches and keyboard labels follow the selected key; transposed playback labels follow the transposed key. For example, A major uses G♯, B♭ major uses E♭, and uncommon signatures retain E♯, B♯, C♭ and F♭ where appropriate. Audio pitches remain MIDI numbers; see [notation naming rules](docs/note-names.md).
 
 ## Recognition scope and limits
 
@@ -67,6 +71,7 @@ Responses request no-store caching and include a restrictive Content Security Po
 | `staff2audio/music.py` | Clef-relative diatonic pitch, key accidental maps, MIDI/note naming |
 | `static/index.html`, `style.css`, `app.js` | Responsive browser workspace, staff selection, editable review, transport/download UI |
 | `static/piano.js` | Web Audio sampled voices, transport scheduling, offline WAV rendering, MIDI encoding |
+| `static/tempo.js`, `static/note-names.js` | Sight-singing pace suggestions, beat-unit conversion, written/contextual pitch labels |
 | `static/audio/` | 88 bundled FluidR3 acoustic-grand recordings and notices |
 | `tools/generate_fixtures.py` | Original synthetic notation/demo generation |
 | `tests/` | Recognition cases, decoder/API boundaries, audio timing/lifecycle/file-format tests |

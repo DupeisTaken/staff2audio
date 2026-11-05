@@ -208,10 +208,11 @@
                     min="30"
                     max="240"
                     step="1"
-                    value="90"
+                    value="72"
                     inputmode="numeric"
+                    aria-describedby="tempoRange tempoReason"
                   />
-                  <small>BPM</small></span
+                  <small id="tempoUnit">♩ BPM</small></span
                 ></label
               ><label for="transpose"
                 >TRANSPOSE
@@ -236,6 +237,19 @@
                   step="0.01"
                   value="0.65"
               /></label>
+            </div>
+            <div id="tempoRecommendation" class="tempo-recommendation" hidden>
+              <div>
+                <strong id="tempoRange"></strong><span id="tempoReason"></span>
+              </div>
+              <button
+                id="autoTempoButton"
+                class="secondary-button"
+                type="button"
+                disabled
+              >
+                Use suggested
+              </button>
             </div>
             <div
               id="keyboard"
@@ -334,8 +348,14 @@
           <strong>Listen, review, repeat.</strong>
           <p>
             Play the sampled grand piano, slow the tempo, transpose, or loop.
-            Click notes to audition; use Review notes to correct pitches and
-            rhythm. MIDI and WAV downloads use your corrections.
+            Each staff starts at a suggested sight-singing pace; faster note
+            values use a slower default. BPM counts the shown note unit (a
+            dotted quarter in 6/8). Your manual tempo is remembered per staff
+            for this score; Use suggested restores the automatic choice. Note
+            names follow the key and preserve written accidentals; transposed
+            playback shows the sounding pitch. Click notes to audition; use
+            Review notes to correct pitches and rhythm. MIDI and WAV downloads
+            use your corrections.
           </p>
         </li>
       </ol>
