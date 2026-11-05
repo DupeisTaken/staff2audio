@@ -39,6 +39,7 @@ def test_archive_payload_licenses_checksum_and_unix_mode(tmp_path, monkeypatch, 
     assert f"{name}/README.txt" in files
     expected = hashlib.sha256(archive.read_bytes()).hexdigest()
     assert archive.with_name(archive.name + ".sha256").read_text() == f"{expected}  {archive.name}\n"
+    assert b"\r" not in archive.with_name(archive.name + ".sha256").read_bytes()
 
 
 def test_unknown_target_rejected_before_touching_files(tmp_path, monkeypatch):

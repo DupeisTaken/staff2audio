@@ -15,16 +15,21 @@
     "Packaged health/privacy headers, frontend assets, runtime license inventory and all 88 embedded MP3 payloads passed.",
     "Actual packaged font/demo recognition, uploaded PNG recognition, two-page synthetic PDF inventory, native PDF preview and page-two recognition passed.",
     "A second executable launch passed with the usual port occupied; no requests or process actions targeted the existing port owner.",
-    "The distributed Windows ZIP was built with the executable, quickstart, application license, 19 runtime dependency license inventories and a SHA-256 sidecar."
+    "The distributed Windows ZIP was built with the executable, quickstart, application license, 19 runtime dependency license inventories and a SHA-256 sidecar.",
+    "All four native GitHub Actions jobs passed 76 Python regressions and both packaged smoke scenarios. Inspect the linked run and its uploaded smoke JSON for measurements.",
+    "The rebuilt Windows checksum sidecar passed GNU sha256sum verification. Sidecars use LF on all platforms, with a regression assertion; the final workflow also verifies all archives together on Linux."
   ],
   "ci": [
-    {"target": "Windows x64", "status": "Pending native CI", "details": "Local Python 3.14 executable verified; CI uses Python 3.12."},
-    {"target": "Linux x64", "status": "Pending native CI", "details": "Ubuntu 22.04 baseline; glibc 2.35+."},
-    {"target": "macOS Intel", "status": "Pending native CI", "details": "macOS 15 Intel runner."},
-    {"target": "macOS Apple Silicon", "status": "Pending native CI", "details": "macOS 15 ARM runner."}
+    {"target": "Windows x64", "status": "Passed native tests + both packaged scenarios", "details": "Windows 2022 / Python 3.12; ready in 3.328s, occupied-port run 3.312s."},
+    {"target": "Linux x64", "status": "Passed native tests + both packaged scenarios", "details": "Ubuntu 22.04 / Python 3.12; ready in 2.031s, occupied-port run 2.039s."},
+    {"target": "macOS Intel", "status": "Passed native tests + both packaged scenarios", "details": "macOS 15 Intel / Python 3.12; ready in 4.000s, occupied-port run 4.654s."},
+    {"target": "macOS Apple Silicon", "status": "Passed native tests + both packaged scenarios", "details": "macOS 15 ARM / Python 3.12; ready in 1.948s, occupied-port run 1.964s."}
   ],
   "links": {
     "Tracking issue #7": "https://github.com/DupeisTaken/staff2audio/issues/7",
+    "Pull request #8": "https://github.com/DupeisTaken/staff2audio/pull/8",
+    "Native smoke evidence": "https://github.com/DupeisTaken/staff2audio/actions/runs/42032664568",
+    "Latest PR checks": "https://github.com/DupeisTaken/staff2audio/pull/8/checks",
     "Repository": "https://github.com/DupeisTaken/staff2audio",
     "PyInstaller design": "https://pyinstaller.org/en/stable/operating-mode.html",
     "GitHub runner reference": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners"

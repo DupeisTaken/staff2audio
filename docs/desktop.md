@@ -83,12 +83,14 @@ cover, native PDF rendering/recognition and occupied-port fallback. Smoke
 measurements and PyInstaller warnings are uploaded as verification artifacts.
 These are not human browser/audio or old-OS compatibility certifications.
 
-Push a `v*` tag to publish a GitHub Release after **all four** native builds and
-packaged checks pass. The workflow uses the built-in `GITHUB_TOKEN` and needs no
+Push a `v*` tag to publish a GitHub Release after **all four** native builds,
+packaged checks and the separate JavaScript regression job pass. The workflow uses the built-in `GITHUB_TOKEN` and needs no
 maintainer secret for unsigned releases. Each archive includes the executable,
 quickstart, application license and dependency license copies. Tar preserves
-execute permission; SHA-256 sidecars cover the distributed archives. The release
-job validates those checksums before upload. GitHub also exposes the tagged
+execute permission; SHA-256 sidecars cover the distributed archives. A separate
+Linux job validates every platform's checksums on PRs as well as tags; the release
+job validates them again before publication. Sidecars use LF on all platforms.
+GitHub also exposes the tagged
 source alongside binaries. Normal builds use read-only repository permissions;
 only the tag publication job can write release assets.
 

@@ -70,7 +70,8 @@ measurements affected by filesystem cache and security scanning, not performance
 <p>GitHub Actions builds natively with Python 3.12 and constrained dependencies. At most two
 matrix jobs run at once. Each native executable must pass both packaged smoke scenarios before
 it is archived. Archives preserve executable permissions and include license copies, a quickstart
-and SHA-256 sidecars. A <code>v*</code> tag publishes a release only after all four jobs pass;
+and SHA-256 sidecars. A <code>v*</code> tag publishes a release only after all four builds,
+JavaScript regressions and cross-platform archive checksum verification pass;
 the built-in GitHub token is sufficient for unsigned publication. This change does not create a release tag.</p>
 <h2>Remaining limits</h2><ul>{limits}</ul>
 <p class="note">Only original synthetic music is used in packaged verification. This report

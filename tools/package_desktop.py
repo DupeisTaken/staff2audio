@@ -41,7 +41,8 @@ def package(target: str) -> Path:
             bundle.add(stage, arcname=name, filter=permissions)
     with archive.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
-    archive.with_name(archive.name + ".sha256").write_text(f"{digest}  {archive.name}\n", encoding="utf-8")
+    archive.with_name(archive.name + ".sha256").write_text(
+        f"{digest}  {archive.name}\n", encoding="utf-8", newline="\n")
     print(f"Packaged {archive.name}: {archive.stat().st_size / 1024 / 1024:.1f} MiB", flush=True)
     return archive
 
