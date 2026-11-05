@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import base64
+from contextlib import asynccontextmanager
 import io
+import math
 import threading
 import time
 import warnings
@@ -61,26 +63,61 @@ def health():
     return {"status": "ok", "local": True}
 
 
-def decode_score(data: bytes, page_number: int = 1) -> tuple[np.ndarray, int]:
-    """Bound decompression before rasterization, orient screenshots, whiten alpha."""
+def validate_file_bytes(data: bytes):
+    """Check the file bound before metadata parsing or decompression."""
     if not data:
         raise ValueError("Choose a screenshot or PDF first.")
     if len(data) > MAX_BYTES:
         raise ValueError("This file exceeds 25 MB. Try a cropped screenshot or a smaller PDF.")
+
+
+def validate_pdf_page(page):
+    dimensions = (page.rect.width, page.rect.height)
+    if not all(math.isfinite(value) and 0 < value < 100_000 for value in dimensions):
+        raise ValueError("This PDF page has invalid dimensions.")
+
+
+def validate_pdf_document(document):
+    if document.needs_pass:
+        raise ValueError("This PDF is password protected. Use an unlocked copy or screenshot.")
+    count = len(document)
+    if count < 1:
+        raise ValueError("This PDF has no pages.")
+    return count
+
+
+def inspect_score(data: bytes) -> dict:
+    """Read the page inventory independently of whether any staff can be found."""
+    validate_file_bytes(data)
+    if data[:5] == b"%PDF-":
+        try:
+            with fitz.open(stream=data, filetype="pdf") as document:
+                count = validate_pdf_document(document)
+                # Page geometry is checked only when that page is decoded. One
+                # malformed page must not hide the rest of a readable document.
+                return {"pages": count, "kind": "pdf"}
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise ValueError("This PDF could not be read. Try a screenshot of the staff.") from exc
+    decode_score(data)
+    return {"pages": 1, "kind": "image"}
+
+
+def decode_score(data: bytes, page_number: int = 1) -> tuple[np.ndarray, int]:
+    """Bound decompression before rasterization, orient screenshots, whiten alpha."""
+    validate_file_bytes(data)
     if page_number < 1:
         raise ValueError("Page numbers start at 1.")
     if data[:5] == b"%PDF-":
         try:
             with fitz.open(stream=data, filetype="pdf") as document:
-                if document.needs_pass:
-                    raise ValueError("This PDF is password protected. Use an unlocked copy or screenshot.")
-                count = len(document)
+                count = validate_pdf_document(document)
                 if not 1 <= page_number <= count:
                     raise ValueError(f"Choose a page between 1 and {count}.")
                 page = document[page_number - 1]
+                validate_pdf_page(page)
                 edge = max(page.rect.width, page.rect.height)
-                if not 0 < edge < 100_000:
-                    raise ValueError("This PDF page has invalid dimensions.")
                 # Normalize PDFs to the same bounded raster size used for OMR
                 # evaluation, rather than varying precision with page units.
                 scale = MAX_EDGE / edge
@@ -116,24 +153,30 @@ def analyze_array(image: np.ndarray, *, name: str, page: int, pages: int):
     with recognition_lock:
         result = recognize(image)
     preview_image = result.pop("processed_image", image)
-    preview = io.BytesIO()
-    Image.fromarray(preview_image).save(preview, format="PNG", optimize=False)
     result.update({
-        "preview": "data:image/png;base64," + base64.b64encode(preview.getvalue()).decode("ascii"),
+        "preview": png_preview(preview_image),
         "filename": name, "page": page, "pages": pages,
         "elapsed_ms": round((time.perf_counter() - started) * 1000),
     })
     return result
 
 
-@app.post("/api/analyze")
-async def analyze(request: Request):
-    """Bound bytes before multipart parsing and keep accepted files in RAM."""
+def png_preview(image: np.ndarray) -> str:
+    preview = io.BytesIO()
+    Image.fromarray(image).save(preview, format="PNG", optimize=False)
+    return "data:image/png;base64," + base64.b64encode(preview.getvalue()).decode("ascii")
+
+
+@asynccontextmanager
+async def score_upload(request: Request):
+    """Share one bounded, in-memory multipart policy across every upload route."""
     if not request.headers.get("content-type", "").lower().startswith("multipart/form-data;"):
         raise HTTPException(422, "Choose a screenshot or PDF using the file picker.")
     request_limit = MAX_BYTES + 1024 * 1024
     try:
         declared = int(request.headers.get("content-length", "0"))
+        if declared < 0:
+            raise ValueError
     except ValueError:
         raise HTTPException(400, "Invalid request length.")
     if declared > request_limit:
@@ -153,26 +196,68 @@ async def analyze(request: Request):
     form = None
     try:
         form = await parser.parse()
+        fields = [key for key, _ in form.multi_items()]
+        if any(key not in {"file", "page"} for key in fields):
+            raise ValueError("Use only the file and page fields.")
+        if fields.count("page") > 1:
+            raise ValueError("Choose one page number.")
         file = form.get("file")
         if not isinstance(file, UploadFile):
             raise ValueError("Choose a screenshot or PDF first.")
         page_field = form.get("page", "1")
         if not isinstance(page_field, str):
             raise ValueError("Page must be a whole number.")
-        page = int(page_field)
+        try:
+            page = int(page_field)
+        except ValueError as exc:
+            raise ValueError("Page must be a whole number.") from exc
+        if page < 1:
+            raise ValueError("Page numbers start at 1.")
         data = await file.read(MAX_BYTES + 1)
-
-        def process():
-            with recognition_lock:
-                image, pages = decode_score(data, page)
-                return analyze_array(image, name=Path(file.filename or "Screenshot").name, page=page, pages=pages)
-
-        return await run_in_threadpool(process)
+        validate_file_bytes(data)
+        name = Path(file.filename or "Screenshot").name
+        # Once bytes are available, release the parser's duplicate buffer early.
+        await file.close()
+        yield data, name, page
     except (ValueError, MultiPartException) as exc:
         raise HTTPException(422, str(exc)) from exc
     finally:
         if form is not None:
             await form.close()
+
+
+@app.post("/api/inspect")
+async def inspect_upload(request: Request):
+    """Find every PDF page even when its cover contains no musical staff."""
+    async with score_upload(request) as (data, name, _):
+        def process():
+            with recognition_lock:
+                return {"filename": name, **inspect_score(data)}
+        return await run_in_threadpool(process)
+
+
+@app.post("/api/preview")
+async def preview_upload(request: Request):
+    """Return a selected page without invoking recognition or storing the file."""
+    async with score_upload(request) as (data, name, page):
+        def process():
+            with recognition_lock:
+                image, pages = decode_score(data, page)
+                height, width = image.shape[:2]
+                return {"filename": name, "pages": pages, "page": page,
+                        "width": width, "height": height, "preview": png_preview(image)}
+        return await run_in_threadpool(process)
+
+
+@app.post("/api/analyze")
+async def analyze(request: Request):
+    """Recognize one selected page; the client orchestrates a document's pages."""
+    async with score_upload(request) as (data, name, page):
+        def process():
+            with recognition_lock:
+                image, pages = decode_score(data, page)
+                return analyze_array(image, name=name, page=page, pages=pages)
+        return await run_in_threadpool(process)
 
 
 @app.get("/api/demo")

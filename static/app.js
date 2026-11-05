@@ -1,5 +1,6 @@
 import { PianoPlayer, scoreDuration } from "./piano.js";
 import { reinterpretStaff } from "./score.js";
+import { DocumentImporter } from "./importer.js";
 import {
   recommendTempo,
   toQuarterBpm,
@@ -22,11 +23,11 @@ const state = {
   file: null,
   busy: false,
   exporting: false,
-  request: 0,
   soundAction: 0,
   loop: false,
   changed: new Set(),
-  controller: null,
+  importing: false,
+  pageOptions: "",
   tempoRecommendation: null,
   tempoBpm: 72,
   tempos: new Map(),
@@ -269,12 +270,12 @@ function enableControls() {
   $("wavButton").disabled ||= state.exporting;
   $("editButton").disabled = state.busy || !staff;
   $("viewButton").disabled = state.busy || !staff;
-  $("pageSelect").disabled = state.busy;
+  $("pageSelect").disabled = state.importing;
   $("tempo").disabled = state.busy || !staff;
   $("autoTempoButton").disabled =
     state.busy || !staff || !state.tempos.has(tempoKey());
-  $("demoButton").disabled = state.busy;
-  $("emptyDemoButton").disabled = state.busy;
+  $("demoButton").disabled = state.importing;
+  $("emptyDemoButton").disabled = state.importing;
   document.querySelectorAll(".staff-item").forEach((button) => {
     button.disabled = state.busy;
   });
@@ -311,14 +312,20 @@ function renderStaffs() {
     count.className = "count";
     count.textContent = `${staff.events.filter((e) => e.midi !== null).length} notes`;
     button.append(icon, text, count);
-    button.addEventListener("click", () => selectStaff(index));
+    button.addEventListener("click", () => {
+      importer.retainSelection();
+      selectStaff(index);
+    });
     $("staffList").append(button);
   });
 }
 
 function selectStaff(index) {
+  if (!state.result?.staffs[index]) return;
   stopPlayback();
   state.selected = index;
+  const record = importer.document?.page(importer.currentPage);
+  if (record) record.selectedStaff = index;
   refreshTempo();
   refreshKeyboardNames();
   renderStaffs();
@@ -352,11 +359,11 @@ function svgElement(name, attributes) {
 function renderScore() {
   const result = state.result,
     staff = currentStaff();
-  if (!result || !staff) return;
+  if (!result?.preview) return;
   const svg = $("scoreSvg");
   svg.replaceChildren();
   let box = [0, 0, result.width, result.height];
-  if (!state.fullPage) {
+  if (!state.fullPage && staff) {
     const [x, y, w, h] = staff.box;
     const pad = Math.max(12, h * 0.15);
     box = [
@@ -407,6 +414,7 @@ function renderScore() {
       });
       drawing.append(region);
     });
+  if (!staff) return;
   const radius = Math.max(6, (staff.lines[4] - staff.lines[0]) / 5);
   staff.events.forEach((event, index) => {
     if (!Number.isFinite(event.x) || !Number.isFinite(event.y)) return;
@@ -451,89 +459,181 @@ function updateTiming() {
   $("totalTime").textContent = clock(total);
 }
 
-async function analyze(file = null, page = 1, demo = false) {
-  state.controller?.abort();
-  const controller = new AbortController();
-  state.controller = controller;
-  const requestId = ++state.request;
-  stopPlayback();
-  state.busy = true;
+function pageStatus(record) {
+  if (!record) return "queued";
+  if (record.status === "ready") return `${record.result.staffs.length} staves`;
+  if (record.status === "error")
+    return /no.*staff/i.test(record.error || "")
+      ? "no staff"
+      : "could not read";
+  return record.status === "processing" ? "reading…" : "queued";
+}
+
+function updateDocumentProgress(info) {
+  state.importing = info.importing;
+  $("dropzone").classList.toggle("loading", info.importing);
+  if (info.importing)
+    notice("Checking the file and discovering its pages…", "busy");
+  const doc = info.document;
+  if (!doc) {
+    $("scanControls").hidden = !info.importing;
+    $("scanProgress").textContent = "Discovering the document’s pages…";
+    $("scanMeter").max = 1;
+    $("scanMeter").value = 0;
+    $("scanButton").textContent = "Cancel import";
+    $("scanButton").disabled = false;
+    $("retryPageButton").hidden = true;
+    enableControls();
+    return;
+  }
+  $("fileInfo").hidden = false;
+  $("fileInfo").textContent =
+    `${doc.filename} · ${doc.pages} ${doc.pages === 1 ? "page" : "pages"}`;
+  $("pageControls").hidden = doc.pages <= 1;
+  const nearby = [];
+  if (doc.pages <= 200)
+    for (let page = 1; page <= doc.pages; page++) nearby.push(page);
+  else {
+    nearby.push(1);
+    for (
+      let page = Math.max(2, info.currentPage - 25);
+      page <= Math.min(doc.pages - 1, info.currentPage + 25);
+      page++
+    )
+      nearby.push(page);
+    nearby.push(doc.pages);
+  }
+  const signature = nearby.join(",");
+  if (signature !== state.pageOptions) {
+    $("pageSelect").replaceChildren(
+      ...nearby.map((page) => new Option(String(page), page)),
+    );
+    state.pageOptions = signature;
+  }
+  const records = new Map(doc.records.map((record) => [record.number, record]));
+  for (const option of $("pageSelect").options)
+    option.textContent = `${option.value} of ${doc.pages} · ${pageStatus(records.get(Number(option.value)))}`;
+  $("pageSelect").value = info.currentPage;
+  $("pageJump").hidden = doc.pages <= 200;
+  $("pageJump").max = doc.pages;
+  $("pageJump").value = info.currentPage;
+  $("pageJump").disabled = info.importing;
+  $("previousPage").disabled = info.importing || info.currentPage <= 1;
+  $("nextPage").disabled = info.importing || info.currentPage >= doc.pages;
+  $("scanControls").hidden = false;
+  const progress = info.progress;
+  $("scanMeter").max = doc.pages;
+  $("scanMeter").value = progress.done;
+  $("scanProgress").textContent = info.scanning
+    ? `Reading page ${info.processingPage || info.currentPage} · ${progress.done} of ${doc.pages} scanned`
+    : progress.pending
+      ? `Scan paused · ${progress.done} of ${doc.pages} scanned`
+      : `${doc.pages} of ${doc.pages} scanned · ${progress.ready} ready${progress.failed ? ` · ${progress.failed} with no music or a reading error` : ""}`;
+  $("scanButton").textContent = info.importing
+    ? "Cancel import"
+    : info.scanning
+      ? "Stop scan"
+      : progress.pending
+        ? "Scan remaining"
+        : "Scan complete";
+  $("scanButton").disabled =
+    !info.importing && !info.scanning && !progress.pending;
+  $("retryPageButton").hidden = doc.page(info.currentPage).status !== "error";
+  $("retryPageButton").disabled = info.importing || info.scanning;
   enableControls();
-  $("dropzone").classList.add("loading");
-  notice("Finding staves, reading notes, and checking the key…", "busy");
-  try {
-    let response;
-    if (demo)
-      response = await fetch("/api/demo", { signal: controller.signal });
-    else {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("page", page);
-      response = await fetch("/api/analyze", {
-        method: "POST",
-        body: form,
-        signal: controller.signal,
-      });
-    }
-    const data = await response.json();
-    if (!response.ok)
-      throw new Error(
-        typeof data.detail === "string"
-          ? data.detail
-          : "The score could not be read. Try a clearer crop.",
-      );
-    if (requestId !== state.request) return;
-    if (!data.staffs.length)
-      throw new Error(
-        "No complete staff was found. Include all five lines, keep the score level, and crop closer to the music.",
-      );
-    if (demo || file !== state.file) state.tempos.clear();
-    state.result = data;
-    state.originals = structuredClone(data.staffs);
-    state.selected = 0;
-    state.fullPage = false;
-    state.file = demo ? null : file;
-    state.changed.clear();
+}
+
+function showDocumentPage(
+  record,
+  { previewLoading = false, previewError = null } = {},
+) {
+  if ($("reviewDialog").open) $("reviewDialog").close();
+  stopPlayback();
+  state.selected = record.selectedStaff;
+  state.changed = record.changed;
+  state.originals = record.originals;
+  state.fullPage = record.fullPage ?? false;
+  state.busy =
+    previewLoading || ["queued", "processing"].includes(record.status);
+  state.result = record.result || null;
+  $("scoreSvg").replaceChildren();
+  $("emptyDemoButton").hidden = true;
+  if (record.result?.preview && !previewLoading) {
     $("scoreEmpty").hidden = true;
     $("scoreView").hidden = false;
-    $("fileInfo").hidden = false;
-    $("fileInfo").textContent =
-      `${data.filename} · ${(data.elapsed_ms / 1000).toFixed(1)}s`;
-    $("pageControls").hidden = data.pages <= 1;
-    $("pageSelect").replaceChildren();
-    for (let number = 1; number <= data.pages; number++) {
-      const option = new Option(
-        `${number} of ${data.pages}`,
-        number,
-        false,
-        number === data.page,
-      );
-      $("pageSelect").add(option);
-    }
-    const warnings = [...new Set(data.warnings || [])];
-    notice(
-      warnings.length
-        ? warnings.join(" ")
-        : "Notes detected. Review the melody, then press play.",
-    );
-    selectStaff(0);
-  } catch (error) {
-    if (error.name !== "AbortError" && requestId === state.request) {
-      if (state.result) $("pageSelect").value = state.result.page;
-      notice(error.message, "error");
-      toast(
-        state.result
-          ? "Could not read this score. Your previous score is still available."
-          : "Could not read this score. Try a clearer screenshot.",
-      );
-    }
-  } finally {
-    if (requestId === state.request) {
+    if (record.status === "ready" && record.result.staffs.length) {
       state.busy = false;
-      $("dropzone").classList.remove("loading");
-      enableControls();
+      selectStaff(
+        Math.min(record.selectedStaff, record.result.staffs.length - 1),
+      );
+      return;
     }
+    state.busy = false;
+    state.fullPage = true;
+    renderStaffs();
+    renderScore();
+  } else {
+    $("scoreEmpty").hidden = false;
+    $("scoreView").hidden = true;
+    $("scoreEmpty").querySelector("h3").textContent = previewLoading
+      ? `Opening page ${record.number}…`
+      : record.status === "processing"
+        ? `Reading page ${record.number}…`
+        : record.status === "queued"
+          ? `Page ${record.number} is waiting.`
+          : `Page ${record.number} needs a closer look.`;
+    $("scoreEmpty").querySelector("p").textContent = previewLoading
+      ? "Loading this page’s image; recognized notes and edits are preserved."
+      : record.status === "queued"
+        ? "The scan will read this page when it reaches it. Use Scan remaining if the scan is paused."
+        : record.status === "processing"
+          ? "Finding staff lines, notes and key signatures locally. Other completed pages remain available."
+          : previewError ||
+            record.error ||
+            "Choose another page or retry this one.";
+    $("staffList").replaceChildren();
+    $("staffCount").textContent = "—";
   }
+  $("scoreTitle").textContent = `Page ${record.number} · ${pageStatus(record)}`;
+  $("recognitionMeta").textContent =
+    record.status === "error"
+      ? "OTHER PAGES REMAIN AVAILABLE"
+      : "LOCAL PAGE RECOGNITION";
+  refreshTempo();
+  refreshKeyboardNames();
+  updateTiming();
+  enableControls();
+  notice(
+    previewError ||
+      record.error ||
+      (previewLoading
+        ? "Opening the selected page…"
+        : record.status === "processing"
+          ? "Reading this page. You can switch to any completed page."
+          : "This page is queued. Resume scanning to recognize remaining pages."),
+    record.status === "error" ? "error" : "busy",
+  );
+}
+
+const importer = new DocumentImporter({
+  onDocument: () => {
+    state.file = importer.file;
+    state.tempos.clear();
+    state.pageOptions = "";
+  },
+  onPage: showDocumentPage,
+  onProgress: updateDocumentProgress,
+  onError: (message) => {
+    notice(message, "error");
+    toast(message);
+  },
+});
+
+function analyze(file = null, page = 1, demo = false) {
+  if ($("reviewDialog").open) $("reviewDialog").close();
+  stopPlayback();
+  if (demo) importer.loadDemo();
+  else importer.importFile(file);
 }
 
 function acceptFile(file) {
@@ -748,10 +848,33 @@ document.addEventListener("paste", (e) => {
 for (const id of ["demoButton", "emptyDemoButton"])
   $(id).addEventListener("click", () => analyze(null, 1, true));
 $("pageSelect").addEventListener("change", () => {
-  if (state.file) analyze(state.file, Number($("pageSelect").value));
+  importer.selectPage(Number($("pageSelect").value));
 });
+$("pageJump").addEventListener("change", () => {
+  const page = Number($("pageJump").value);
+  if (Number.isInteger(page) && page >= 1 && page <= importer.document?.pages)
+    importer.selectPage(page);
+  else {
+    $("pageJump").value = importer.currentPage;
+    toast("Choose a page within this PDF.");
+  }
+});
+$("previousPage").addEventListener("click", () =>
+  importer.selectPage(importer.currentPage - 1),
+);
+$("nextPage").addEventListener("click", () =>
+  importer.selectPage(importer.currentPage + 1),
+);
+$("scanButton").addEventListener("click", () => {
+  if (importer.importing) importer.cancelImport();
+  else if (importer.scanning) importer.stopScan();
+  else importer.startScan();
+});
+$("retryPageButton").addEventListener("click", () => importer.retryPage());
 $("viewButton").addEventListener("click", () => {
   state.fullPage = !state.fullPage;
+  const record = importer.document?.page(importer.currentPage);
+  if (record) record.fullPage = state.fullPage;
   renderScore();
 });
 $("playButton").addEventListener("click", play);
@@ -818,6 +941,7 @@ $("transpose").addEventListener("change", () => {
   );
 });
 $("editButton").addEventListener("click", () => {
+  importer.retainSelection();
   stopPlayback();
   renderReview();
   $("reviewDialog").showModal();
@@ -924,7 +1048,10 @@ document.addEventListener("keydown", (e) => {
     play();
   }
 });
-window.addEventListener("pagehide", stopPlayback);
+window.addEventListener("pagehide", () => {
+  stopPlayback();
+  importer.cancelWork();
+});
 buildKeyboard();
 refreshTempo();
 enableControls();

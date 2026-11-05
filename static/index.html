@@ -62,8 +62,47 @@
             </button>
             <div id="fileInfo" class="file-info" hidden></div>
             <div id="pageControls" class="page-controls" hidden>
-              <label for="pageSelect">PDF page</label
-              ><select id="pageSelect"></select>
+              <label for="pageSelect">PDF page</label>
+              <div class="page-switch">
+                <button
+                  id="previousPage"
+                  class="icon-button"
+                  aria-label="Previous PDF page"
+                >
+                  ‹
+                </button>
+                <select id="pageSelect"></select>
+                <button
+                  id="nextPage"
+                  class="icon-button"
+                  aria-label="Next PDF page"
+                >
+                  ›
+                </button>
+              </div>
+              <input
+                id="pageJump"
+                type="number"
+                min="1"
+                step="1"
+                aria-label="Jump to PDF page"
+                hidden
+              />
+            </div>
+            <div id="scanControls" class="scan-controls" hidden>
+              <p id="scanProgress" role="status" aria-live="polite"></p>
+              <progress
+                id="scanMeter"
+                max="1"
+                value="0"
+                aria-label="Document recognition progress"
+              ></progress>
+              <div class="scan-actions">
+                <button id="scanButton" class="quiet small">Stop scan</button
+                ><button id="retryPageButton" class="quiet small" hidden>
+                  Retry page
+                </button>
+              </div>
             </div>
           </section>
           <section id="staffSection" class="card staff-card">

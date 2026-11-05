@@ -28,6 +28,18 @@ def pdf_bytes(*, encrypted: bool = False, width: float = 200) -> bytes:
         return document.tobytes(**({"encryption": fitz.PDF_ENCRYPT_AES_256, "owner_pw": "owner", "user_pw": "secret"} if encrypted else {}))
 
 
+def blank_cover_score_pdf() -> bytes:
+    """Original two-page fixture: a white cover, then a small printed staff."""
+    with fitz.open() as document:
+        document.new_page(width=200, height=100)
+        page = document.new_page(width=200, height=100)
+        for y in [30, 38, 46, 54, 62]:
+            page.draw_line((15, y), (185, y), color=(0, 0, 0), width=.6)
+        page.draw_oval(fitz.Rect(70, 57, 80, 63), color=(0, 0, 0), fill=(0, 0, 0))
+        page.draw_line((80, 60), (80, 30), color=(0, 0, 0), width=1)
+        return document.tobytes()
+
+
 @pytest.fixture
 def client(monkeypatch):
     def lightweight_recognize(image):
@@ -258,3 +270,143 @@ def test_invalid_multipart_boundaries_counts_and_field_types_are_handled(client)
     assert response.status_code == 422
     response = client.post("/api/analyze", files=[("file", ("a.png", image_bytes())), ("page", ("bad.txt", b"1"))])
     assert response.status_code in (400, 422)
+
+
+def test_inspect_blank_cover_inventory_does_not_render_or_recognize(client, monkeypatch):
+    def forbidden(*args, **kwargs):
+        raise AssertionError("PDF inspection must not rasterize or recognize a cover")
+    monkeypatch.setattr(server, "recognize", forbidden)
+    monkeypatch.setattr(fitz.Page, "get_pixmap", forbidden)
+    response = client.post("/api/inspect", files={"file": ("../practice.pdf", blank_cover_score_pdf())})
+    assert response.status_code == 200
+    assert response.json() == {"filename": "practice.pdf", "pages": 2, "kind": "pdf"}
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_preview_selected_pdf_page_never_invokes_cv(client, monkeypatch):
+    monkeypatch.setattr(server, "MAX_EDGE", 200)
+    def forbidden(_): raise AssertionError("A preview must never run recognition")
+    monkeypatch.setattr(server, "recognize", forbidden)
+    response = client.post("/api/preview", files={"file": ("score.pdf", pdf_bytes())}, data={"page": "2"})
+    assert response.status_code == 200
+    result = response.json()
+    assert set(result) == {"filename", "pages", "page", "width", "height", "preview"}
+    assert (result["filename"], result["pages"], result["page"], result["width"], result["height"]) == ("score.pdf", 2, 2, 200, 100)
+    image = Image.open(io.BytesIO(base64.b64decode(result["preview"].split(",", 1)[1])))
+    assert image.mode == "RGB" and image.size == (200, 100)
+    assert image.getpixel((30, 30)) == (0, 0, 255)
+
+
+def test_blank_cover_cannot_block_later_music_pages(client, monkeypatch):
+    monkeypatch.setattr(server, "MAX_EDGE", 200)
+    calls = []
+    def recognize_music(image):
+        calls.append(int(image.min()))
+        if image.min() == 255:
+            raise ValueError("No five-line musical staff was found. Use a clear staff image.")
+        return {"width": image.shape[1], "height": image.shape[0], "staffs": [{"id":1,
+            "clef":"treble", "key_signature":0, "events":[{"id":"n1", "midi":64,
+            "name":"E4", "onset":0, "duration":1}]}], "warnings":[], "engine":"fixture"}
+    monkeypatch.setattr(server, "recognize", recognize_music)
+    data = blank_cover_score_pdf()
+    upload = {"file": ("practice.pdf", data, "application/pdf")}
+    assert client.post("/api/inspect", files=upload).json()["pages"] == 2
+    cover = client.post("/api/analyze", files=upload, data={"page":"1"})
+    assert cover.status_code == 422 and "No five-line" in cover.json()["detail"]
+    assert client.post("/api/preview", files=upload, data={"page":"1"}).status_code == 200
+    music = client.post("/api/analyze", files=upload, data={"page":"2"})
+    assert music.status_code == 200
+    assert music.json()["page"] == music.json()["pages"] == 2
+    assert music.json()["staffs"][0]["events"][0]["midi"] == 64
+    assert client.post("/api/preview", files=upload, data={"page":"2"}).status_code == 200
+    assert len(calls) == 2 and calls[0] == 255 and calls[1] < 255
+
+
+def test_inspect_images_validate_content_not_claimed_mime(client, monkeypatch):
+    def forbidden(_): raise AssertionError("Image inventory must not run CV")
+    monkeypatch.setattr(server, "recognize", forbidden)
+    response = client.post("/api/inspect", files={"file": ("wrong.pdf", image_bytes(), "application/pdf")})
+    assert response.status_code == 200
+    assert response.json() == {"filename":"wrong.pdf", "pages":1, "kind":"image"}
+    monkeypatch.setattr(server, "MAX_PIXELS", 100)
+    assert client.post("/api/inspect", files={"file": ("large.png", image_bytes())}).status_code == 422
+
+
+@pytest.mark.parametrize("endpoint", ["inspect", "preview"])
+def test_new_endpoints_reject_malformed_and_encrypted_files(client, endpoint):
+    for data, message in [(b"bad", "readable"), (b"%PDF-1.4\ninvalid", "could not be read"),
+                          (pdf_bytes(encrypted=True), "password protected")]:
+        response = client.post(f"/api/{endpoint}", files={"file": ("score", data)})
+        assert response.status_code == 422 and message in response.json()["detail"]
+
+
+def test_invalid_page_geometry_cannot_block_inventory_or_other_valid_pages(client, monkeypatch):
+    monkeypatch.setattr(server, "MAX_EDGE", 200)
+    with fitz.open() as document:
+        document.new_page(width=200, height=100)
+        document.new_page(width=100001, height=100)
+        data = document.tobytes()
+    upload = {"file": ("score.pdf", data)}
+    response = client.post("/api/inspect", files=upload)
+    assert response.status_code == 200
+    assert response.json() == {"filename":"score.pdf", "pages":2, "kind":"pdf"}
+    for endpoint in ["analyze", "preview"]:
+        valid = client.post(f"/api/{endpoint}", files=upload, data={"page":"1"})
+        assert valid.status_code == 200 and valid.json()["pages"] == 2
+        invalid = client.post(f"/api/{endpoint}", files=upload, data={"page":"2"})
+        assert invalid.status_code == 422 and "invalid dimensions" in invalid.json()["detail"]
+
+
+@pytest.mark.parametrize("data,page,message", [(pdf_bytes(),"3","between 1 and 2"),
+    (image_bytes(),"2","Images have one page"), (image_bytes(),"0","start at 1"),
+    (image_bytes(),"bad","whole number")])
+def test_preview_page_bounds_and_type_errors_are_actionable(client, data, page, message):
+    response = client.post("/api/preview", files={"file": ("score", data)}, data={"page":page})
+    assert response.status_code == 422 and message in response.json()["detail"]
+
+
+@pytest.mark.parametrize("endpoint", ["analyze", "inspect", "preview"])
+def test_every_upload_endpoint_bounds_declared_stream_and_file_bytes(client, monkeypatch, endpoint):
+    monkeypatch.setattr(server, "MAX_BYTES", 1024)
+    url = f"/api/{endpoint}"
+    response = client.post(url, content=b"", headers={"Content-Length": str(1024 + 1024 * 1024 + 1),
+        "Content-Type": "multipart/form-data; boundary=test-boundary"})
+    assert response.status_code == 413
+    for length in ["bad", "-1"]:
+        assert client.post(url, content=b"", headers={"Content-Length":length,
+            "Content-Type":"multipart/form-data; boundary=test-boundary"}).status_code == 400
+    response = client.post(url, files={"file":("large.png", b"x" * 1025)})
+    assert response.status_code == 422 and "25 MB" in response.json()["detail"]
+    body = multipart_file(b"x" * (1024 * 1024 + 2048))
+    request = client.build_request("POST", url, content=(body[i:i+4096] for i in range(0,len(body),4096)),
+        headers={"Content-Type":"multipart/form-data; boundary=test-boundary"})
+    assert "content-length" not in request.headers
+    response = client.send(request)
+    assert response.status_code == 422 and "25 MB" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("endpoint", ["analyze", "inspect", "preview"])
+def test_every_upload_endpoint_keeps_accepted_buffers_in_memory_and_closes_them(client, monkeypatch, endpoint):
+    original = formparsers.SpooledTemporaryFile
+    opened = []
+    def in_memory_file(*args, **kwargs):
+        handle = original(*args, **kwargs)
+        def forbidden_rollover(): raise AssertionError("Score upload must stay in memory")
+        handle.rollover = forbidden_rollover
+        opened.append(handle)
+        return handle
+    monkeypatch.setattr(formparsers, "SpooledTemporaryFile", in_memory_file)
+    response = client.post(f"/api/{endpoint}", files={"file":("score.png", image_bytes() + b"x" * (1024 * 1024 + 1))})
+    assert response.status_code == 200 and len(opened) == 1
+    assert opened[0].closed and not opened[0]._rolled
+
+
+@pytest.mark.parametrize("endpoint", ["analyze", "inspect", "preview"])
+def test_every_upload_endpoint_rejects_wrong_form_types_and_foreign_requests(client, endpoint):
+    url = f"/api/{endpoint}"
+    for content_type in ["application/json", "text/plain", "multipart/form-data"]:
+        assert client.post(url, content=b"bad", headers={"Content-Type":content_type}).status_code == 422
+    assert client.post(url, files={"file":("score.png",image_bytes())}, data={"unexpected":"value"}).status_code == 422
+    assert client.post(url, files=[("file",("a.png",image_bytes())),("page",("b.txt",b"1"))]).status_code == 422
+    assert client.post(url, files={"file":("score.png",image_bytes())}, headers={"Origin":"https://unrelated.example"}).status_code == 403
+    assert client.post(url, files={"file":("score.png",image_bytes())}, headers={"Host":"unrelated.example"}).status_code == 400

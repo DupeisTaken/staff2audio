@@ -34,13 +34,15 @@ If port 8765 is occupied, start `.venv\Scripts\python.exe -m uvicorn app:app --h
 
 ## Use the workspace
 
-1. Choose an image/PDF, drop one onto the upload area, paste a screenshot, or open the included example. For PDFs, choose a page from the page selector. Include the clef and key signature when cropping.
+1. Choose an image/PDF, drop one onto the upload area, paste a screenshot, or open the included example. PDFs automatically scan every page in sequence. The page picker appears before recognition, so blank covers or unreadable pages cannot hide later music. Progress and each page's status are visible; completed pages are usable while scanning continues. Include the clef and key signature when cropping.
 2. Select a detected staff. Focus staff isolates its preview; Full page shows the source and selectable staff regions. Each staff plays independently, including staves with different clefs or key signatures.
 3. Click a detected note or an on-screen piano key to hear it. Review notes opens the pitch/rest and duration editor; you can change clef/key interpretation, add/delete events, and restore the selected staff's original detection. Corrections live only in the current browser session.
 4. Play/pause, resume, stop, loop, or drag the progress control to seek. Each staff starts at a suggested sight-singing tempo based on meter and its fastest sounding note values. BPM counts the displayed beat unit: quarter notes in 4/4, dotted quarters in 6/8. Adjust it freely; your choice is remembered per page/staff for the current score, and **Use suggested** restores Auto. Transposition shifts the performance by semitones. The volume slider affects playback and WAV export. Space toggles play/pause when focus is outside an editor/control.
 5. Download MIDI for an editable sequence or WAV for the actual sampled piano sound. Both export the entire selected staff once with current corrections, tempo, and transposition. MIDI is rendered by the receiving player's instrument; WAV is stereo 44.1 kHz, 16-bit PCM. Retain the piano attribution when distributing rendered audio.
 
 The on-screen keyboard displays a central range; the local instrument contains all 88 piano keys, A0–C8. Pitches beyond this sample range use correctly pitched resampling of the nearest key. Very long held notes decay naturally rather than repeating an artificial sustain loop.
+
+PDF navigation retains each page's note corrections, selected staff, original detection and manual tempo. Only three full-page PNG previews are cached; returning to an evicted preview renders its image without rerunning recognition or losing edits. **Stop scan** pauses remaining requests, **Scan remaining** resumes queued pages, and **Retry page** retries a failed page explicitly. A local recognition call already in progress may finish after Stop, but its late response cannot change the stopped or replacement document. Long PDFs have a page-number jump control. Closing/reloading the tab discards document state. See [document state](docs/document-state.md) and [PDF API contracts](docs/pdf-api.md).
 
 Ordinary 4/4 passages start at **72 quarter-note BPM**, with a suggested 60–80 range; sixteenth-note passages start at **56**, with a 48–60 range. Ordinary 6/8 starts at **48 dotted-quarter BPM**, with a 40–56 range; sixteenths start at **40**, with a 36–44 range. Faster subdivisions scale the suggestion further. These are adjustable practice choices, not inferred printed markings or an examination standard. One steady tempo applies to the whole staff. See [the tempo policy, beat conversions and limits](docs/tempo.md).
 
@@ -72,11 +74,12 @@ Responses request no-store caching and include a restrictive Content Security Po
 | `static/index.html`, `style.css`, `app.js` | Responsive browser workspace, staff selection, editable review, transport/download UI |
 | `static/piano.js` | Web Audio sampled voices, transport scheduling, offline WAV rendering, MIDI encoding |
 | `static/tempo.js`, `static/note-names.js` | Sight-singing pace suggestions, beat-unit conversion, written/contextual pitch labels |
+| `static/document.js`, `static/importer.js` | Per-page edits/statuses, bounded preview cache, sequential recognition and cancellation |
 | `static/audio/` | 88 bundled FluidR3 acoustic-grand recordings and notices |
 | `tools/generate_fixtures.py` | Original synthetic notation/demo generation |
 | `tests/` | Recognition cases, decoder/API boundaries, audio timing/lifecycle/file-format tests |
 
-There is no frontend build step. API payloads and ownership boundaries are described in [the integration contract](docs/contract.md); piano scheduling/export semantics are described in [audio documentation](docs/audio.md). The service exposes `GET /api/health`, `GET /api/demo`, and `POST /api/analyze` with a multipart `file` and one-based `page` field. Recognition returns geometric note/staff metadata and an inline PNG preview; it does not persist a score identifier or provide a cloud API.
+There is no frontend build step. API payloads and ownership boundaries are described in [the integration contract](docs/contract.md); piano scheduling/export semantics are described in [audio documentation](docs/audio.md). The service exposes `GET /api/health`, `GET /api/demo`, plus `POST /api/inspect`, `POST /api/preview`, and `POST /api/analyze` with a multipart `file` and optional one-based `page` field. Recognition returns geometric note/staff metadata and an inline PNG preview; it does not persist a score identifier or provide a cloud API.
 
 ## Development and checks
 
