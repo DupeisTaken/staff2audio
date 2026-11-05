@@ -6,6 +6,7 @@ import {
   toQuarterBpm,
   fromQuarterBpm,
   clampDisplayBpm,
+  tempoPresets,
 } from "./tempo.js";
 import {
   pitchName,
@@ -74,6 +75,14 @@ let toastTimer, previewTimer;
 
 function renderTempoInfo() {
   const profile = tempoProfile();
+  const preset = $("tempoPreset");
+  preset.options[0].textContent = `Custom · ${state.tempoBpm} BPM`;
+  preset.value = [...preset.options].some(
+    (option) => option.value === String(state.tempoBpm),
+  ) ? String(state.tempoBpm) : "";
+  preset.setAttribute(
+    "aria-label", `BPM preset in ${profile.beatLabel} beats per minute`,
+  );
   $("tempoUnit").textContent = `${profile.beatSymbol} BPM`;
   $("tempo").setAttribute(
     "aria-label",
@@ -104,6 +113,14 @@ function refreshTempo() {
   $("tempo").min = Math.ceil(30 / profile.quarterNotesPerBeat);
   $("tempo").max = Math.floor(240 / profile.quarterNotesPerBeat);
   $("tempo").value = state.tempoBpm;
+  const custom = new Option("Custom", "");
+  custom.disabled = true;
+  $("tempoPreset").replaceChildren(
+    custom,
+    ...tempoPresets(profile.quarterNotesPerBeat).map(
+      (bpm) => new Option(`${bpm} BPM`, String(bpm)),
+    ),
+  );
   renderTempoInfo();
 }
 
@@ -272,6 +289,7 @@ function enableControls() {
   $("viewButton").disabled = state.busy || !staff;
   $("pageSelect").disabled = state.importing;
   $("tempo").disabled = state.busy || !staff;
+  $("tempoPreset").disabled = state.busy || !staff;
   $("autoTempoButton").disabled =
     state.busy || !staff || !state.tempos.has(tempoKey());
   $("demoButton").disabled = state.importing;
@@ -912,6 +930,11 @@ $("tempo").addEventListener("input", () => {
 $("tempo").addEventListener("change", () =>
   applyTempo($("tempo").value.trim() ? $("tempo").value : state.tempoBpm),
 );
+$("tempoPreset").addEventListener("change", () => {
+  const value = Number($("tempoPreset").value);
+  if (tempoPresets(tempoProfile().quarterNotesPerBeat).includes(value))
+    applyTempo(value);
+});
 $("autoTempoButton").addEventListener("click", () => {
   state.tempos.delete(tempoKey());
   applyTempo(tempoProfile().bpm, false);

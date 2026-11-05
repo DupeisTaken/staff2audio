@@ -1,6 +1,9 @@
 // Practice suggestions are product choices, not score markings or pedagogy standards.
 const QUARTER_MIN = 30;
 const QUARTER_MAX = 240;
+const BPM_PRESETS = [
+  30, 40, 48, 56, 60, 72, 80, 90, 100, 120, 144, 160, 180, 200, 240, 300, 360, 480,
+];
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const numeric = (value, fallback) => {
   if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim())) return fallback;
@@ -15,6 +18,18 @@ function factorValue(value) {
     throw new RangeError('The beat unit must map to a supported quarter-note tempo.');
   }
   return factor;
+}
+
+/** Exact displayed-beat choices, including each unit's supported endpoints.
+ * Filter rather than clamp preset values so a selected number is never changed.
+ */
+export function tempoPresets(quarterNotesPerBeat = 1) {
+  const factor = factorValue(quarterNotesPerBeat);
+  const min = Math.max(1, Math.ceil(QUARTER_MIN / factor));
+  const max = Math.floor(QUARTER_MAX / factor);
+  return [...new Set([
+    min, ...BPM_PRESETS.filter(bpm => bpm >= min && bpm <= max), max,
+  ])].sort((a, b) => a - b);
 }
 
 /** Integer display input bounds map to the engine's 30–240 quarter-note BPM. */

@@ -63,6 +63,8 @@ PDF navigation retains each page's note corrections, selected staff, original de
 
 Ordinary 4/4 passages start at **72 quarter-note BPM**, with a suggested 60–80 range; sixteenth-note passages start at **56**, with a 48–60 range. Ordinary 6/8 starts at **48 dotted-quarter BPM**, with a 40–56 range; sixteenths start at **40**, with a 36–44 range. Faster subdivisions scale the suggestion further. These are adjustable practice choices, not inferred printed markings or an examination standard. One steady tempo applies to the whole staff. See [the tempo policy, beat conversions and limits](docs/tempo.md).
 
+Choose a **BPM preset** beside the tempo input, or type any supported value. Presets count the shown beat unit and stay within its supported range. Choices are remembered per page/staff for the current score; **Use suggested** restores the automatic pace. See the [BPM preset verification report](docs/bpm-presets-report.html).
+
 Recognized note labels preserve written sharps, flats, naturals and octave spelling. Edited pitches and keyboard labels follow the selected key; transposed playback labels follow the transposed key. For example, A major uses G♯, B♭ major uses E♭, and uncommon signatures retain E♯, B♯, C♭ and F♭ where appropriate. Audio pitches remain MIDI numbers; see [notation naming rules](docs/note-names.md).
 
 ## Recognition scope and limits
@@ -111,6 +113,8 @@ node --test tests/*.test.mjs
 ```
 
 Node 24 or newer is recommended for JavaScript tests and the optional sample-bundling maintenance tool. The application itself does not require Node. Python tests verify actual file decoding and recognizer output on original fixtures; API tests replace the recognizer with lightweight deterministic output so HTTP/file/privacy cases do not repeatedly run CV. Audio tests use a fake audio clock and validate MIDI/WAV bytes; additionally verify real MP3 decoding, sound, downloads, desktop/mobile layouts, and keyboard controls in a browser after UI/audio changes. A passing synthetic suite does not prove recognition quality on an unseen score.
+
+For the real-browser BPM preset regressions, run `npm ci`, `npx playwright install chromium`, then `npm run test:browser` after installing Python development dependencies. The suite starts and stops its own loopback server, exercises the included synthetic example and a generated two-page PDF, checks actual MIDI/WAV downloads and active playback, and verifies five viewport widths. It uses `.venv\\Scripts\\python.exe` on Windows when present, or `python`; set `PRIMA_PYTHON` to select another local interpreter. Set `PRIMA_BROWSER_CHANNEL=msedge` to use an installed Edge browser instead of bundled Chromium. The application-check workflow runs the Chromium suite in CI.
 
 Create the original demo fixture with `.venv\Scripts\python.exe -m tools.generate_fixtures` (writes `tmp/demo-score.png`). Rebuild the included audio bundle, only when intentionally maintaining assets, with `node tools/audio-bundle.mjs`. That tool downloads the pinned upstream revision, checks SHA-256, and extracts literal MP3 strings without executing downloaded code. Normal playback never runs it or fetches its upstream URL.
 
