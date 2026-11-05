@@ -101,6 +101,8 @@ The [standalone HTML report](docs/implementation-report.html) embeds desktop/mob
 
 The subsequent tempo and key-aware naming refinement has its own [independent assessment](docs/tempo-review.md), also above 9.5 in every dimension. The original recognition review is retained as baseline evidence.
 
+Automatic all-page PDF recognition and retained page corrections have a separate [multipage assessment](docs/multipage-review.md), with all eight dimensions above 9.5. The combined suite passes 59 Python and 122 JavaScript checks.
+
 ## Licenses and attribution
 
 The application is distributed under **GNU AGPL version 3**; see [LICENSE](LICENSE). PDF support uses [PyMuPDF](https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright), which is offered under AGPL or a commercial license. Its AGPL obligations matter when modifying, distributing, or serving a derivative application; retaining the package name or a notice alone does not replace those obligations. Review the actual licenses for your intended distribution.
