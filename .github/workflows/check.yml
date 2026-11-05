@@ -16,3 +16,6 @@ jobs:
       - run: python -m pytest -q
       - run: node --test tests/*.test.mjs
       - run: node --check static/app.js
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run test:browser

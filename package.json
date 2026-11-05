@@ -3,6 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "test": "node --test tests/*.test.mjs" },
-  "license": "AGPL-3.0-or-later"
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node --test tests/*.browser.mjs"
+  },
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
 }

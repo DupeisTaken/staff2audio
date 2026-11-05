@@ -253,6 +253,15 @@
                   />
                   <small id="tempoUnit">♩ BPM</small></span
                 ></label
+              ><label class="tempo-preset" for="tempoPreset"
+                >BPM PRESET
+                <select
+                  id="tempoPreset"
+                  aria-describedby="tempoUnit tempoRange tempoReason"
+                  disabled
+                >
+                  <option value="" disabled selected>Custom</option>
+                </select></label
               ><label for="transpose"
                 >TRANSPOSE
                 <select id="transpose">
@@ -389,7 +398,8 @@
             Play the sampled grand piano, slow the tempo, transpose, or loop.
             Each staff starts at a suggested sight-singing pace; faster note
             values use a slower default. BPM counts the shown note unit (a
-            dotted quarter in 6/8). Your manual tempo is remembered per staff
+            dotted quarter in 6/8). Choose a BPM preset or type your own value.
+            Your tempo is remembered per staff
             for this score; Use suggested restores the automatic choice. Note
             names follow the key and preserve written accidentals; transposed
             playback shows the sounding pitch. Click notes to audition; use

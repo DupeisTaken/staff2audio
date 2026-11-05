@@ -1,9 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { recommendTempo, toQuarterBpm, fromQuarterBpm, clampDisplayBpm } from '../static/tempo.js';
+import { recommendTempo, toQuarterBpm, fromQuarterBpm, clampDisplayBpm, tempoPresets } from '../static/tempo.js';
 
 const note = (duration, extra = {}) => ({ midi: 60, duration, confidence: 0.95, ...extra });
 const staff = (time_signature = '4/4', events = [note(1), note(0.5)]) => ({ time_signature, events });
+
+test('presets offer exact familiar practice tempos plus the supported endpoints', () => {
+  assert.deepEqual(tempoPresets(), [30,40,48,56,60,72,80,90,100,120,144,160,180,200,240]);
+  assert.deepEqual(tempoPresets(1.5), [20,30,40,48,56,60,72,80,90,100,120,144,160]);
+  assert.deepEqual(tempoPresets(2), [15,30,40,48,56,60,72,80,90,100,120]);
+  assert.deepEqual(tempoPresets(0.5), [60,72,80,90,100,120,144,160,180,200,240,300,360,480]);
+});
+
+test('presets stay sorted, unique and engine-compatible for every recognized meter', () => {
+  for (const numerator of [1,2,3,4,6,9,12,32]) for (const denominator of [1,2,4,8,16,32]) {
+    const factor = recommendTempo(staff(`${numerator}/${denominator}`)).quarterNotesPerBeat;
+    const values = tempoPresets(factor);
+    assert.equal(values[0], Math.ceil(30 / factor));
+    assert.equal(values.at(-1), Math.floor(240 / factor));
+    assert.deepEqual(values, [...new Set(values)].sort((a,b) => a-b));
+    for (const bpm of values) {
+      assert.ok(Number.isInteger(bpm));
+      assert.equal(toQuarterBpm(bpm, factor), bpm * factor);
+    }
+  }
+  const values = tempoPresets();
+  values.push(73);
+  assert.ok(!tempoPresets().includes(73), 'callers cannot mutate the shared choices');
+});
+
+test('presets reject unsupported beat units consistently with tempo conversion', () => {
+  for (const factor of [0,-1,NaN,Infinity,1000,1e-300]) assert.throws(() => tempoPresets(factor), RangeError);
+});
 
 test('4/4 quarter/eighth notes get the transparent 60–80, default72 quarter pulse', () => {
   const result = recommendTempo(staff());

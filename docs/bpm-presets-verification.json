@@ -1,0 +1,102 @@
+{
+  "date": "2026-11-05",
+  "issue_url": "https://github.com/DupeisTaken/staff2audio/issues/9",
+  "pr_url": "https://github.com/DupeisTaken/staff2audio/compare/main...codex/bpm-presets",
+  "base_commit": "cddc7c6b135acb7e8d44bc6f95bd367de458970a",
+  "python": "Python 3.14.5",
+  "node": "v24.16.0",
+  "python_tests": {
+    "command": ".venv/Scripts/python.exe -m pytest -q",
+    "passed": 76,
+    "warnings": 1,
+    "warning": "Existing Starlette/httpx deprecation"
+  },
+  "javascript_tests": {
+    "command": "node --test tests/*.test.mjs",
+    "passed": 125,
+    "failed": 0
+  },
+  "syntax_check": {
+    "command": "node --check static/app.js",
+    "passed": true
+  },
+  "browser_tests": {
+    "command": "npm run test:browser",
+    "browser": "Microsoft Edge, headless",
+    "scenarios": 6,
+    "test_nodes": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "browser": {
+    "checks": [
+      "disabled state, custom/manual/reset synchronization",
+      "compound conversion and per-staff persistence",
+      "live playback continuity, pause and resume",
+      "native keyboard selection and focus",
+      "real two-page PDF navigation and new-document reset",
+      "five desktop/tablet/mobile layouts, no page errors"
+    ],
+    "layouts": [
+      {
+        "width": 1440,
+        "documentWidth": 1440,
+        "controlWidth": 213.59375,
+        "controlFits": true,
+        "label": true
+      },
+      {
+        "width": 1024,
+        "documentWidth": 1024,
+        "controlWidth": 123.75,
+        "controlFits": true,
+        "label": true
+      },
+      {
+        "width": 768,
+        "documentWidth": 768,
+        "controlWidth": 202.78125,
+        "controlFits": true,
+        "label": true
+      },
+      {
+        "width": 390,
+        "documentWidth": 390,
+        "controlWidth": 155.40625,
+        "controlFits": true,
+        "label": true
+      },
+      {
+        "width": 320,
+        "documentWidth": 320,
+        "controlWidth": 123.203125,
+        "controlFits": true,
+        "label": true
+      }
+    ],
+    "exports": {
+      "quarterMidiMicroseconds": 500000,
+      "compoundMidiMicroseconds": 666667,
+      "compoundWavSeconds": 4.16
+    },
+    "playbackPosition": {
+      "before": 0.25,
+      "after": 0.25
+    }
+  },
+  "screenshots": {
+    "source": "Real loopback dev server; included original synthetic demo",
+    "before_base": "origin/main",
+    "viewports": [
+      1440,
+      390
+    ]
+  },
+  "limits": [
+    "English-only application; no other language variants",
+    "Local visual verification used Windows Edge",
+    "No Safari, Firefox or physical-device verification",
+    "No subjective listening evaluation; actual local samples decoded and WAV/MIDI bytes checked",
+    "Session-only saved tempos; original recognition/engine limits apply"
+  ]
+}

@@ -30,6 +30,14 @@ The same base pulse windows apply to other simple/compound denominators, while r
 
 There is one steady recommended tempo per selected staff. Measure numbers, event order, and empty measures do not cause tempo changes during playback. This policy does not implement automatic rubato or different speeds for individual measures.
 
+## Selecting a BPM preset
+
+The player offers exact numeric presets beside the manual tempo input. Numbers count the displayed beat: choosing **60 BPM** in 6/8 means 60 dotted-quarter beats per minute, or 90 quarter BPM for playback and export. The selector's accessible name spells out that beat unit.
+
+Common choices are 30, 40, 48, 56, 60, 72, 80, 90, 100, 120, 144, 160, 180, 200, 240, 300, 360 and 480 BPM. `tempoPresets(factor = 1)` filters those numbers to the engine-compatible integer range and adds the range endpoints, sorted without duplicates. Out-of-range choices are omitted rather than silently changed. This is a convenience list of product choices, not an interpretation of printed tempo markings.
+
+Choosing a preset uses the same tempo path as typing a number, updates clocks and active playback, and is remembered for the selected page/staff within the current document. The selector follows manual edits and staff/page navigation. A value outside the preset list appears as **Custom · N BPM**; arbitrary supported manual input remains available. **Use suggested** clears the saved override and restores the automatic starting pulse. Both tempo controls are disabled when no staff is available or the page is loading. Tempo choices are discarded on a new document or browser reload.
+
 ## Quarter-note engine contract
 
 Recognition durations, onsets, seek positions, Web Audio scheduling, and MIDI tempo events retain their existing quarter-note semantics. Convert only the UI tempo:
@@ -77,3 +85,5 @@ The root UI owns automatic/reset behavior, the manual choice for each page/staff
 ## Verification
 
 Run `node --test tests/tempo.test.mjs`. The independent cases cover simple eighths versus short notes, low-confidence short-note conservatism, compound grouping/conversion, beat-relative density in 2/2 and 3/8, faster-subdivision scaling, floating-point tolerance, invalid meters, empty/rest-only events, input bounds, fractional roundtrips, all supported meter-derived factor bounds, and steady staff-wide suggestions. These tests establish the policy and unit conversions; they do not measure a person's sight-singing ability.
+
+Preset tests cover the quarter/dotted-quarter/half/eighth choice lists, sorted unique integer bounds for every recognized meter, exact engine conversion and invalid factors. `npm run test:browser` exercises the actual local server and sampled audio: disabled state, manual/custom/reset synchronization, keyboard selection, per-staff and two-page PDF persistence, new-document reset, tempo changes during playback, MIDI tempo bytes, WAV duration and layouts from 320 to 1440 px. See [development setup](../README.md#development-and-checks) and the [self-contained report](bpm-presets-report.html).
