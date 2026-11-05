@@ -11,6 +11,7 @@ if ($LASTEXITCODE -ne 0) {
     & $Python -m pip install -r requirements.txt
     if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
 }
-$LaunchArgs = @('run.py', '--port', "$Port")
+$LaunchArgs = @('run.py')
+if ($PSBoundParameters.ContainsKey('Port')) { $LaunchArgs += @('--port', "$Port") }
 if ($NoBrowser) { $LaunchArgs += '--no-browser' }
 & $Python @LaunchArgs

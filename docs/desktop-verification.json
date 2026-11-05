@@ -1,0 +1,42 @@
+{
+  "local": {
+    "environment": "Windows 11 x64; Python 3.14.5; PyInstaller 6.22.3",
+    "python_tests": 76,
+    "javascript_tests": 122,
+    "executable_mib": 94.67,
+    "archive_mib": 94.26,
+    "startup_seconds": 10.299,
+    "fallback_startup_seconds": 4.174
+  },
+  "checks": [
+    "76 Python regressions passed, including real socket reservation, occupied/explicit port handling, browser readiness, Linux library-path restoration, archive contents, Unix modes and checksums.",
+    "122 JavaScript regressions passed for notation, tempo, document state, sample loading, audio lifecycle and MIDI/WAV bytes.",
+    "Actual Windows one-file executable passed from an empty temporary directory with Python removed from PATH and Python environment variables removed.",
+    "Packaged health/privacy headers, frontend assets, runtime license inventory and all 88 embedded MP3 payloads passed.",
+    "Actual packaged font/demo recognition, uploaded PNG recognition, two-page synthetic PDF inventory, native PDF preview and page-two recognition passed.",
+    "A second executable launch passed with the usual port occupied; no requests or process actions targeted the existing port owner.",
+    "The distributed Windows ZIP was built with the executable, quickstart, application license, 19 runtime dependency license inventories and a SHA-256 sidecar."
+  ],
+  "ci": [
+    {"target": "Windows x64", "status": "Pending native CI", "details": "Local Python 3.14 executable verified; CI uses Python 3.12."},
+    {"target": "Linux x64", "status": "Pending native CI", "details": "Ubuntu 22.04 baseline; glibc 2.35+."},
+    {"target": "macOS Intel", "status": "Pending native CI", "details": "macOS 15 Intel runner."},
+    {"target": "macOS Apple Silicon", "status": "Pending native CI", "details": "macOS 15 ARM runner."}
+  ],
+  "links": {
+    "Tracking issue #7": "https://github.com/DupeisTaken/staff2audio/issues/7",
+    "Repository": "https://github.com/DupeisTaken/staff2audio",
+    "PyInstaller design": "https://pyinstaller.org/en/stable/operating-mode.html",
+    "GitHub runner reference": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners"
+  },
+  "limitations": [
+    "Unsigned executables: Windows SmartScreen/macOS Gatekeeper approval can be required. Managed devices may require signing. Apple notarization and platform signing need maintainer credentials.",
+    "macOS ships a terminal executable, not an installable .app or DMG. Keep the console open and use Ctrl+C to stop; closing a browser tab alone does not stop the service.",
+    "Windows 10/11 x64, macOS 15+ Intel/Apple Silicon and glibc 2.35+ Linux x64 are the intended targets. Older OS versions, Alpine/musl, Linux ARM and Windows ARM are not validated targets.",
+    "One-file startup extracts bundled runtime assets to writable temporary storage. Linux noexec temporary directories require an executable TMPDIR.",
+    "The system browser and normal OS libraries remain prerequisites. Offline operation does not describe unrelated browser/OS network behavior.",
+    "No workspace UI/audio behavior was changed; interactive playback and old-OS compatibility were not newly certified by these packaged HTTP checks.",
+    "One existing FastAPI/Starlette TestClient deprecation warning remains in the local Python suite. It does not affect packaged runtime smoke checks.",
+    "No release tag was created; tagged release publication is configured for maintainers after review."
+  ]
+}

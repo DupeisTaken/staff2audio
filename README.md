@@ -4,7 +4,24 @@ Turn a screenshot or PDF page of printed music into a staff you can inspect, cor
 
 This is a focused local practice tool for **clean, printed, monophonic notation**, not a general score transcription engine. Review detected notes and rhythm before relying on the performance. Confidence indicators describe heuristic evidence, not calibrated accuracy guarantees.
 
-## Run locally
+## Download and run
+
+[GitHub Releases](https://github.com/DupeisTaken/staff2audio/releases) will contain
+portable executables built by GitHub Actions for **Windows x64, Linux x64, macOS
+Intel and macOS Apple Silicon** after a `v*` tag passes all four packaged checks.
+PR/manual builds also provide downloadable Actions artifacts. Extract the archive
+and run `Prima.exe` on Windows, or `./Prima` from a terminal on macOS/Linux. Prima
+opens your browser once ready and automatically chooses a free local port.
+
+**No Python, Node, package installation, API keys, external PDF tools or runtime
+downloads are needed.** Keep the console open during use; press `Ctrl+C` to stop.
+A current browser is required. Initial builds are unsigned; macOS/Windows may
+require approval under your device policy. macOS requires 15+, Linux requires
+glibc 2.35+, and the current Windows release targets x64 Windows 10/11. See the
+[portable quickstart](docs/desktop-quickstart.txt) and
+[architecture, build and release guide](docs/desktop.md) for details.
+
+## Run from source
 
 Use Python 3.11 or newer and a current Chrome, Edge, Firefox, or Safari browser. Run these commands from the project directory. On Windows PowerShell, the launcher creates an isolated environment if needed and opens the browser once the server is ready:
 
@@ -30,7 +47,7 @@ python3 -m venv .venv
 
 Open [Prima on your computer](http://127.0.0.1:8765). Stop the server with `Ctrl+C`. The server binds to `127.0.0.1`; keep that default. Initial package installation requires internet access. After installation, the included recognition font, piano recordings, frontend, and demo work offline. Opening `static/index.html` directly does not start the backend.
 
-If port 8765 is occupied, start `.venv\Scripts\python.exe -m uvicorn app:app --host 127.0.0.1 --port 8766` and open [the alternate local port](http://127.0.0.1:8766). Browsers require a click before audio can start; click a piano key or Play staff if sound has not been enabled yet.
+The launcher chooses another port automatically if 8765 is occupied. Use `python run.py --port 0` to always choose a free port, `--port 8766` to require a specific port, or `--no-browser` to print the address without opening it. Browsers require a click before audio can start; click a piano key or Play staff if sound has not been enabled yet.
 
 ## Use the workspace
 
@@ -68,6 +85,8 @@ Responses request no-store caching and include a restrictive Content Security Po
 
 | Component | Responsibility |
 | --- | --- |
+| `run.py` | Source/frozen launcher, reserved loopback socket, automatic port selection and browser readiness |
+| `Prima.spec`, `tools/build_desktop.py`, `.github/workflows/desktop.yml` | Self-contained executables, bundled dependencies/assets/licenses, native CI smoke checks and tagged releases |
 | `app.py` | FastAPI local HTTP service, request/file bounds, raster/PDF decoding, serial recognition, in-memory preview responses |
 | `staff2audio/omr.py` | Deterministic staff/symbol recognition and confidence/warnings |
 | `staff2audio/music.py` | Clef-relative diatonic pitch, key accidental maps, MIDI/note naming |
@@ -96,6 +115,10 @@ Node 24 or newer is recommended for JavaScript tests and the optional sample-bun
 Create the original demo fixture with `.venv\Scripts\python.exe -m tools.generate_fixtures` (writes `tmp/demo-score.png`). Rebuild the included audio bundle, only when intentionally maintaining assets, with `node tools/audio-bundle.mjs`. That tool downloads the pinned upstream revision, checks SHA-256, and extracts literal MP3 strings without executing downloaded code. Normal playback never runs it or fetches its upstream URL.
 
 ## Verification report
+
+Portable executable packaging has its own [self-contained verification report](docs/desktop-report.html)
+and [inspectable evidence](docs/desktop-verification.json), including installation before/after,
+actual packaged checks, archive measurements, CI status and platform limits.
 
 The [standalone HTML report](docs/implementation-report.html) embeds desktop/mobile screenshots, a rendered piano example, test results, issue/PR links, independent review scores and remaining limits. The separate reviewer rated all eight documented dimensions above 9.5/10, with a minimum of 9.6; see [the assessment and its evidence limits](docs/final-review.json). The ratings apply to the clean printed monophonic scope and are not a transcription-accuracy percentage. The supplied private PDF and extracted score data are excluded from Git and the report.
 

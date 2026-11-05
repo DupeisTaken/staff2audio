@@ -1,0 +1,47 @@
+Prima / Staff2Audio - portable desktop release
+
+Download the archive matching your operating system and processor:
+  Windows 10/11 x64:       Prima-windows-x64.zip
+  Linux x64 (glibc 2.35+): Prima-linux-x64.tar.gz
+  macOS 15+ Intel:        Prima-macos-x64.tar.gz
+  macOS 15+ Apple Silicon: Prima-macos-arm64.tar.gz
+
+Extract the archive. On Windows, double-click Prima.exe. On macOS/Linux,
+open a terminal in the extracted folder and run ./Prima. The default browser
+opens when the local service is ready. A current Chrome, Edge, Firefox or
+Safari browser is required. There is no Python, Node, pip, OpenCV, PDF tool,
+account, API key, model download or asset installation to configure.
+
+Keep the console/terminal open during use. Press Ctrl+C there to stop Prima;
+closing the browser tab alone does not stop the service. The first launch
+may take a few seconds while the single executable extracts its runtime to
+the operating system temporary directory. Keep that directory writable and,
+on Linux, executable (a noexec /tmp requires an appropriate TMPDIR).
+
+The service listens only on 127.0.0.1. If port 8765 is in use, it chooses a
+free port automatically. Advanced options:
+  Prima --no-browser           Print the address without opening a browser
+  Prima --port 0               Always select a free port
+  Prima --port 8766            Require a particular local port
+Use ./Prima on macOS/Linux and .\Prima.exe in Windows PowerShell.
+
+These initial portable builds are unsigned. macOS Gatekeeper and Windows
+SmartScreen may require approval under your device policy; do not disable
+system protection. Managed devices may require a signed release. Signing and
+Apple notarization require maintainer credentials and are not configured by
+this workflow. macOS ships a terminal executable, not an installable .app.
+Tar archives retain the Unix execute permission; if an extraction tool drops
+it, run chmod +x Prima. Linux requires a compatible glibc-based desktop;
+Alpine/musl, 32-bit systems, Linux ARM and Windows ARM are not release targets.
+
+All recognition, PDF decoding, fonts and 88 piano samples are bundled and work
+offline. Uploaded scores are processed in memory. Closing/reloading the tab
+discards edits. No source scores or telemetry are uploaded. Review recognition
+before relying on it: clean printed monophonic notation is the supported scope.
+
+Compare the archive SHA-256 with its adjacent .sha256 file. Application source
+and exact tagged releases: https://github.com/DupeisTaken/staff2audio
+Application license: GNU AGPL v3 or later (LICENSE). Dependency license copies
+are in licenses/ and embedded at /static/licenses/packages.json. Font and piano
+notices are embedded in the executable under /static/THIRD_PARTY_NOTICES.txt
+and /static/audio/ATTRIBUTION.md. Retain piano attribution with shared audio.
