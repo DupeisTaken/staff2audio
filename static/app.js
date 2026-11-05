@@ -259,13 +259,19 @@ function renderScore() {
     const pad = Math.max(12, h * 0.15);
     box = [
       Math.max(0, x - pad),
-      Math.max(0, y - pad),
+      Math.max(0, y),
       Math.min(result.width - Math.max(0, x - pad), w + 2 * pad),
-      Math.min(result.height - Math.max(0, y - pad), h + 2 * pad),
+      Math.min(result.height - Math.max(0, y), h),
     ];
   }
   svg.setAttribute("viewBox", box.join(" "));
-  svg.append(
+  // A minimum display height can letterbox a wide staff; clip in score units
+  // so page titles and neighboring exercises cannot leak into that space.
+  const clip = svgElement("clipPath", { id: "scoreClip", clipPathUnits: "userSpaceOnUse" });
+  clip.append(svgElement("rect", { x: box[0], y: box[1], width: box[2], height: box[3] }));
+  const drawing = svgElement("g", { "clip-path": "url(#scoreClip)" });
+  svg.append(clip, drawing);
+  drawing.append(
     svgElement("image", {
       href: result.preview,
       width: result.width,
@@ -292,7 +298,7 @@ function renderScore() {
           selectStaff(index);
         }
       });
-      svg.append(region);
+      drawing.append(region);
     });
   const radius = Math.max(6, (staff.lines[4] - staff.lines[0]) / 5);
   staff.events.forEach((event, index) => {
@@ -323,7 +329,7 @@ function renderScore() {
         action();
       }
     });
-    svg.append(marker);
+    drawing.append(marker);
   });
   $("viewButton").textContent = state.fullPage
     ? "Focus staff ↙"

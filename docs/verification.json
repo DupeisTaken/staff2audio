@@ -17,12 +17,16 @@
     },
     {
       "name": "Final local checks",
-      "result": "python -m pytest -q: 39 passed in 7.37s, with one upstream Starlette TestClient/httpx deprecation warning. node --test tests/*.test.mjs: 54 passed, zero failures. JavaScript syntax and Python compilation checks passed."
+      "result": "python -m pytest -q: 39 passed in 6.96s, with one upstream Starlette TestClient/httpx deprecation warning. node --test tests/*.test.mjs: 54 passed, zero failures. JavaScript syntax and Python compilation checks passed. GitHub Actions Windows/Python 3.12 checks also passed."
+    },
+    {
+      "name": "PDF decoder integration regression",
+      "result": "Actual app.decode_score images for all six supplied PDF pages are pixel-identical to the evaluated 2,600-pixel rasters; all 717 MIDI/duration events match the saved evaluation. A regression test fixes the normalized PDF raster dimensions."
     }
   ],
   "private_score_summary": "The complete six-page supplied PDF was processed locally at a 2,600-pixel long edge: 36 staves and 717 note events in 16.6 seconds total. The independent reviewer visually checked complete phrases plus targeted accidental/rhythm passages, including all 97 notes and rhythms on the last page. All identified flag, sharp, false-rest and key errors were repaired. This is not a claim that all 717 events were manually verified or that arbitrary scores have the same accuracy.",
-  "audio_summary": "Actual browser MP3 decoding, transport and downloads were exercised. A rendered edited D4 phrase produced stereo 44.1 kHz 16-bit PCM, 5.16 seconds, nonzero RMS 0.00806 and a strongest FFT bin near 293 Hz, consistent with D4. The MIDI download has a format-0 header and 480 ticks per quarter note. Device speaker listening was not independently measured.",
-  "browser_summary": "Real local-server checks covered desktop and 390-pixel mobile viewports, note/rest corrections, MIDI/WAV downloads, play/pause/resume, keyboard PDF upload and six-page selection. The narrow layout measured document clientWidth=375 and scrollWidth=375. English is the only implemented language. Final integrated recheck is pending.",
+  "audio_summary": "Actual browser MP3 decoding and downloads were exercised. The final edited D4/bass-clef phrase rendered as stereo 44.1 kHz 16-bit PCM, 5.8267 seconds for 8.5 beats at 90 BPM plus release, nonzero RMS 0.00946 and a strongest FFT bin near 293 Hz, consistent with D4. The MIDI download has a format-0 header and 480 ticks per quarter note. Device speaker listening was not independently measured.",
+  "browser_summary": "Final real local-server checks covered normalized PDF upload (six pages, restored nineteenth half note on the first staff), page-six selection, image paste, desktop and 390-pixel mobile layouts, note/rest and fractional-rhythm edits, clef/key overrides, manual-pitch preservation, MIDI/WAV downloads, play/pause/seek/staff-switch/stop, and keyboard file upload. Desktop and mobile document scrollWidth matched clientWidth. English is the only implemented language.",
   "limitations": [
     "Recognition is an editable heuristic draft for clean, level, printed monophonic treble/bass staves. High reading confidence does not guarantee transcription accuracy.",
     "Handwriting, perspective photos, dense/chordal notation, multiple voices, ties, tuplets, repeats, grace notes and expressive performance are not reliably interpreted. Phrase slurs are ignored; ties require manual consolidation.",
@@ -32,6 +36,6 @@
     "The server is intended for loopback use. It has no public-hosting authentication or deployment hardening. Initial dependency installation needs internet access.",
     "Final independent acceptance and full integrated checks are pending in this draft report."
   ],
-  "pr_url": "https://github.com/DupeisTaken/staff2audio/pulls",
+  "pr_url": "https://github.com/DupeisTaken/staff2audio/pull/3",
   "review": []
 }
