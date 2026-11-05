@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f6f4ef" />
+    <title>Prima · Score to piano</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script type="module" src="/static/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Prima home"
+        ><span class="brand-mark">♮</span> prima<span class="brand-sub"
+          >SCORE TO PIANO</span
+        ></a
+      ><span class="local-badge"><i></i> All on your device</span
+      ><button id="helpButton" class="quiet">
+        How it works <span aria-hidden="true">↗</span>
+      </button>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">A LITTLE HELP WITH YOUR NEXT PRACTICE</p>
+          <h1>See the notes. <em>Hear the music.</em></h1>
+          <p class="intro-copy">
+            Turn a printed melody into piano, one staff at a time.
+          </p>
+        </div>
+        <span class="edition"
+          >YOUR LOCAL<br />MUSIC COMPANION <span>01 / PIANO</span></span
+        >
+      </section>
+      <div class="workspace">
+        <aside class="sidebar">
+          <section class="card import-card">
+            <div class="section-label"><span>01</span> YOUR SCORE</div>
+            <label
+              id="dropzone"
+              class="dropzone"
+              for="fileInput"
+              tabindex="0"
+              role="button"
+              aria-label="Choose a score image or PDF"
+              ><span class="upload-icon" aria-hidden="true">↥</span
+              ><strong>Bring your music</strong
+              ><span>Drop a score, or <u>choose a file</u></span
+              ><small>PDF, PNG, JPG, WebP · up to 25 MB</small></label
+            ><input
+              id="fileInput"
+              type="file"
+              accept="application/pdf,image/png,image/jpeg,image/webp,image/tiff,image/bmp"
+              hidden
+            />
+            <p class="paste-hint">
+              <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste a screenshot
+            </p>
+            <button id="demoButton" class="example-button">
+              Try an example <span aria-hidden="true">→</span>
+            </button>
+            <div id="fileInfo" class="file-info" hidden></div>
+            <div id="pageControls" class="page-controls" hidden>
+              <label for="pageSelect">PDF page</label>
+              <div class="page-switch">
+                <button
+                  id="previousPage"
+                  class="icon-button"
+                  aria-label="Previous PDF page"
+                >
+                  ‹
+                </button>
+                <select id="pageSelect"></select>
+                <button
+                  id="nextPage"
+                  class="icon-button"
+                  aria-label="Next PDF page"
+                >
+                  ›
+                </button>
+              </div>
+              <input
+                id="pageJump"
+                type="number"
+                min="1"
+                step="1"
+                aria-label="Jump to PDF page"
+                hidden
+              />
+            </div>
+            <div id="scanControls" class="scan-controls" hidden>
+              <p id="scanProgress" role="status" aria-live="polite"></p>
+              <progress
+                id="scanMeter"
+                max="1"
+                value="0"
+                aria-label="Document recognition progress"
+              ></progress>
+              <div class="scan-actions">
+                <button id="scanButton" class="quiet small">Stop scan</button
+                ><button id="retryPageButton" class="quiet small" hidden>
+                  Retry page
+                </button>
+              </div>
+            </div>
+          </section>
+          <section id="staffSection" class="card staff-card">
+            <div class="section-label">
+              <span>02</span> CHOOSE A STAFF <small id="staffCount">—</small>
+            </div>
+            <div id="staffList">
+              <p class="empty-small">Your detected staves will appear here.</p>
+            </div>
+          </section>
+          <div class="privacy-note">
+            <span aria-hidden="true">⌂</span>
+            <p>
+              Private by design.<br /><span
+                >Your scores stay on this computer.</span
+              >
+            </p>
+          </div>
+        </aside>
+        <div class="main-column">
+          <section class="card score-card" aria-label="Score preview">
+            <div class="score-top">
+              <div>
+                <p class="eyebrow">THE PRACTICE ROOM</p>
+                <h2 id="scoreTitle">A blank page, a fresh start.</h2>
+              </div>
+              <button id="viewButton" class="quiet small" disabled>
+                Full page ↗
+              </button>
+            </div>
+            <div
+              id="notice"
+              class="notice"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></div>
+            <div id="scoreEmpty" class="score-empty">
+              <div class="ornament" aria-hidden="true">
+                <span>𝄞</span>
+                <div class="decor-staff">
+                  <i></i><i></i><i></i><i></i><i></i><b>♪</b><b>♩</b><b>♫</b>
+                </div>
+              </div>
+              <h3>Your music starts here.</h3>
+              <p>
+                Add a screenshot or PDF, and we’ll find the staves,<br />read
+                the notes, and bring the melody to life.
+              </p>
+              <button id="emptyDemoButton" class="text-button">
+                Explore with an example <span>→</span>
+              </button>
+            </div>
+            <div id="scoreView" class="score-view" hidden>
+              <svg
+                id="scoreSvg"
+                xmlns="http://www.w3.org/2000/svg"
+                role="group"
+                aria-label="Detected music. Select a note to hear or edit it."
+              ></svg>
+            </div>
+            <div class="score-bottom">
+              <span id="recognitionMeta">CLEAN, PRINTED MELODIES WORK BEST</span
+              ><button id="editButton" class="quiet small" disabled>
+                Review notes <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </section>
+          <section class="card player-card" aria-label="Piano player">
+            <div class="player-top">
+              <div>
+                <div class="instrument">
+                  <span class="instrument-icon" aria-hidden="true">▥</span>
+                  <div>
+                    <h2>Grand piano</h2>
+                    <p id="audioStatus">Sampled piano · plays locally</p>
+                  </div>
+                </div>
+              </div>
+              <div class="player-actions">
+                <button
+                  id="midiButton"
+                  class="quiet small"
+                  disabled
+                  title="Download MIDI"
+                >
+                  MIDI ↓</button
+                ><button
+                  id="wavButton"
+                  class="quiet small"
+                  disabled
+                  title="Download piano audio"
+                >
+                  WAV ↓
+                </button>
+              </div>
+            </div>
+            <div class="transport">
+              <button
+                id="stopButton"
+                class="icon-button"
+                aria-label="Stop playback"
+                disabled
+              >
+                ■</button
+              ><button id="playButton" class="play-button" disabled>
+                <span id="playIcon" aria-hidden="true">▶</span>
+                <span id="playLabel">Play staff</span></button
+              ><button
+                id="loopButton"
+                class="icon-button"
+                aria-label="Loop selected staff"
+                aria-pressed="false"
+                disabled
+              >
+                ↻
+              </button>
+              <div class="seek-wrap">
+                <label class="sr-only" for="seek">Playback position</label
+                ><input
+                  id="seek"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0"
+                  disabled
+                />
+                <div class="time">
+                  <span id="position">0:00</span
+                  ><span id="totalTime">0:00</span>
+                </div>
+              </div>
+            </div>
+            <div class="settings">
+              <label class="tempo-setting" for="tempo"
+                >TEMPO
+                <span
+                  ><input
+                    id="tempo"
+                    type="number"
+                    min="30"
+                    max="240"
+                    step="1"
+                    value="72"
+                    inputmode="numeric"
+                    aria-describedby="tempoRange tempoReason"
+                  />
+                  <small id="tempoUnit">♩ BPM</small></span
+                ></label
+              ><label for="transpose"
+                >TRANSPOSE
+                <select id="transpose">
+                  <option value="-12">−12 · octave down</option>
+                  <option value="-5">−5 · perfect fourth down</option>
+                  <option value="-2">−2 · whole step down</option>
+                  <option value="-1">−1 · half step down</option>
+                  <option value="0" selected>Original pitch</option>
+                  <option value="1">+1 · half step up</option>
+                  <option value="2">+2 · whole step up</option>
+                  <option value="5">+5 · perfect fourth up</option>
+                  <option value="12">+12 · octave up</option>
+                </select></label
+              ><label class="volume-setting" for="volume"
+                >VOLUME
+                <input
+                  id="volume"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.65"
+              /></label>
+            </div>
+            <div id="tempoRecommendation" class="tempo-recommendation" hidden>
+              <div>
+                <strong id="tempoRange"></strong><span id="tempoReason"></span>
+              </div>
+              <button
+                id="autoTempoButton"
+                class="secondary-button"
+                type="button"
+                disabled
+              >
+                Use suggested
+              </button>
+            </div>
+            <div
+              id="keyboard"
+              class="keyboard"
+              role="group"
+              aria-label="Piano keyboard, C3 through B5"
+            ></div>
+            <div class="keyboard-caption">
+              <span>CLICK A KEY TO LISTEN</span><span id="currentNote">♪</span
+              ><span>C3 — B5</span>
+            </div>
+          </section>
+          <p class="scope-note">
+            Recognition is a starting point. Review highlighted notes before
+            practicing. Designed for clear, single-melody staves; handwriting
+            and complex scores may need corrections.
+          </p>
+        </div>
+      </div>
+      <footer>
+        <span>prima <span class="footer-dot">/</span> Make room for music.</span
+        ><button id="creditsButton" class="quiet small">About & credits</button>
+      </footer>
+    </main>
+    <dialog id="reviewDialog">
+      <form method="dialog" class="dialog-top">
+        <div>
+          <p class="eyebrow">MAKE IT YOURS</p>
+          <h2>Review the melody</h2>
+        </div>
+        <button class="icon-button" aria-label="Close note review">✕</button>
+      </form>
+      <p class="dialog-copy">
+        Select a note on the score to audition it. Correct the pitch or length
+        below; changes apply to playback and downloads.
+      </p>
+      <div class="review-options">
+        <label for="clefSelect"
+          >Clef
+          <select id="clefSelect" aria-label="Clef">
+            <option value="treble">Treble</option>
+            <option value="bass">Bass</option>
+          </select></label
+        ><label for="keySelect"
+          >Key signature
+          <select id="keySelect" aria-label="Key signature"></select
+        ></label>
+      </div>
+      <p class="muted" id="reviewHint"></p>
+      <div class="note-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Pitch</th>
+              <th>Beats</th>
+              <th>Read</th>
+              <th><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="noteRows"></tbody>
+        </table>
+      </div>
+      <div class="review-footer">
+        <button id="addNoteButton" class="secondary-button">+ Add note</button
+        ><button id="resetNotesButton" class="quiet">Reset this staff</button
+        ><button id="doneButton" class="primary-button">Done</button>
+      </div>
+    </dialog>
+    <dialog id="helpDialog">
+      <form method="dialog" class="dialog-top">
+        <div>
+          <p class="eyebrow">FROM PAGE TO PRACTICE</p>
+          <h2>A small guide to Prima</h2>
+        </div>
+        <button class="icon-button" aria-label="Close guide">✕</button>
+      </form>
+      <ol class="guide">
+        <li>
+          <strong>Bring a clear score.</strong>
+          <p>
+            Upload a PDF or image, drag it in, or paste a screenshot. Keep all
+            five staff lines and the clef visible. Crop out other windows; keep
+            the staff level.
+          </p>
+        </li>
+        <li>
+          <strong>Pick your melody.</strong>
+          <p>
+            Each detected staff is a separate practice phrase. For PDFs, choose
+            a page. Filled markers show detected notes; amber means the reading
+            needs a closer look.
+          </p>
+        </li>
+        <li>
+          <strong>Listen, review, repeat.</strong>
+          <p>
+            Play the sampled grand piano, slow the tempo, transpose, or loop.
+            Each staff starts at a suggested sight-singing pace; faster note
+            values use a slower default. BPM counts the shown note unit (a
+            dotted quarter in 6/8). Your manual tempo is remembered per staff
+            for this score; Use suggested restores the automatic choice. Note
+            names follow the key and preserve written accidentals; transposed
+            playback shows the sounding pitch. Click notes to audition; use
+            Review notes to correct pitches and rhythm. MIDI and WAV downloads
+            use your corrections.
+          </p>
+        </li>
+      </ol>
+      <p class="guide-note">
+        Best with clean, printed, monophonic treble or bass staves. Chords,
+        multiple voices, ties, tuplets, ornaments, lyrics, handwriting, and
+        perspective photos are not reliably interpreted. Key names show major /
+        relative minor because the signature alone cannot determine the mode.
+        Recognition estimates are heuristics, not calibrated accuracy
+        percentages.
+      </p>
+      <div class="credits">
+        <strong>Entirely local. No account. No score uploads.</strong>
+        <p>
+          Music glyphs: Bravura by Steinberg, SIL Open Font License. Piano
+          sample attribution is included with the local audio assets. Built with
+          Python, OpenCV, Pillow, PyMuPDF, FastAPI and Web Audio.
+        </p>
+        <p>
+          <a href="/static/audio/ATTRIBUTION.md" target="_blank" rel="noopener"
+            >Piano credits & license ↗</a
+          >
+          ·
+          <a
+            href="/static/THIRD_PARTY_NOTICES.txt"
+            target="_blank"
+            rel="noopener"
+            >Third-party notices ↗</a
+          >
+        </p>
+      </div>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>
