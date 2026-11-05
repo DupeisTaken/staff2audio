@@ -1,7 +1,7 @@
 {
   "date": "2026-11-05",
   "issue_url": "https://github.com/DupeisTaken/staff2audio/issues/9",
-  "pr_url": "https://github.com/DupeisTaken/staff2audio/compare/main...codex/bpm-presets",
+  "pr_url": "https://github.com/DupeisTaken/staff2audio/pull/10",
   "base_commit": "cddc7c6b135acb7e8d44bc6f95bd367de458970a",
   "python": "Python 3.14.5",
   "node": "v24.16.0",
