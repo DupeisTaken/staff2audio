@@ -1,0 +1,37 @@
+{
+  "python_tests": 39,
+  "node_tests": 54,
+  "minimum_review": "Pending",
+  "checks": [
+    {
+      "name": "Recognition",
+      "result": "13 synthetic end-to-end recognition tests passed in the final combined run, including independent demo pitch/rhythm ground truth, clefs, keys, accidentals, flags under slurs, beams, dots, rests, resizing and faded JPEG."
+    },
+    {
+      "name": "HTTP and file handling",
+      "result": "26 decoder/API tests passed in the final combined run; include real image/PDF decoding, invalid pages, malformed multipart, declared and streamed size bounds, in-memory spooling, and local origin/host policy."
+    },
+    {
+      "name": "Piano and notation editing",
+      "result": "54 JavaScript tests passed (15 piano + 39 notation), with fake-clock lifecycle, MIDI/WAV structure, all key signatures in both clefs, explicit/inherited naturals, manual edits and roundtrips."
+    },
+    {
+      "name": "Final local checks",
+      "result": "python -m pytest -q: 39 passed in 7.37s, with one upstream Starlette TestClient/httpx deprecation warning. node --test tests/*.test.mjs: 54 passed, zero failures. JavaScript syntax and Python compilation checks passed."
+    }
+  ],
+  "private_score_summary": "The complete six-page supplied PDF was processed locally at a 2,600-pixel long edge: 36 staves and 717 note events in 16.6 seconds total. The independent reviewer visually checked complete phrases plus targeted accidental/rhythm passages, including all 97 notes and rhythms on the last page. All identified flag, sharp, false-rest and key errors were repaired. This is not a claim that all 717 events were manually verified or that arbitrary scores have the same accuracy.",
+  "audio_summary": "Actual browser MP3 decoding, transport and downloads were exercised. A rendered edited D4 phrase produced stereo 44.1 kHz 16-bit PCM, 5.16 seconds, nonzero RMS 0.00806 and a strongest FFT bin near 293 Hz, consistent with D4. The MIDI download has a format-0 header and 480 ticks per quarter note. Device speaker listening was not independently measured.",
+  "browser_summary": "Real local-server checks covered desktop and 390-pixel mobile viewports, note/rest corrections, MIDI/WAV downloads, play/pause/resume, keyboard PDF upload and six-page selection. The narrow layout measured document clientWidth=375 and scrollWidth=375. English is the only implemented language. Final integrated recheck is pending.",
+  "limitations": [
+    "Recognition is an editable heuristic draft for clean, level, printed monophonic treble/bass staves. High reading confidence does not guarantee transcription accuracy.",
+    "Handwriting, perspective photos, dense/chordal notation, multiple voices, ties, tuplets, repeats, grace notes and expressive performance are not reliably interpreted. Phrase slurs are ignored; ties require manual consolidation.",
+    "Staves play independently; the app does not infer multi-staff instrument parts or join systems. A key signature alone does not determine major versus minor mode.",
+    "Uploads are bounded to 25 MiB and raster images to 30 megapixels; processed images have a 2,600-pixel long-edge limit. Local process/browser memory and operating-system swap remain outside application storage controls.",
+    "Audio needs a browser gesture and can be suspended by background/locked-device policies. WAV is limited to ten minutes; transport is limited to thirty minutes and 20,000 events.",
+    "The server is intended for loopback use. It has no public-hosting authentication or deployment hardening. Initial dependency installation needs internet access.",
+    "Final independent acceptance and full integrated checks are pending in this draft report."
+  ],
+  "pr_url": "https://github.com/DupeisTaken/staff2audio/pulls",
+  "review": []
+}

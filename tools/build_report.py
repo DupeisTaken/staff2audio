@@ -1,0 +1,53 @@
+"""Build one shareable HTML file; embeds only original synthetic examples."""
+from __future__ import annotations
+
+import base64
+import html
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def media(path: Path, mime: str) -> str:
+    return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+
+
+def build():
+    evidence = json.loads((ROOT / "docs/verification.json").read_text(encoding="utf-8"))
+    esc = html.escape
+    pictures = "".join(
+        f'<figure><img src="{media(ROOT / "docs/screenshots" / file, "image/jpeg")}" alt="{esc(title)}"><figcaption>{esc(title)}</figcaption></figure>'
+        for file, title in [
+            ("empty-desktop.jpg", "Before import: a clear starting point"),
+            ("desktop.jpg", "After import: detected notes and local piano controls"),
+            ("mobile.jpg", "Mobile: the same practice flow in one column"),
+            ("mobile-review.jpg", "Mobile: editable note pitches and rhythm"),
+        ]
+    )
+    scores = "".join(f'<tr><td>{esc(row["dimension"])}</td><td>{row["score"]}/10</td><td>{esc(row["evidence"])}</td></tr>' for row in evidence.get("review", []))
+    tests = "".join(f'<li><strong>{esc(test["name"])}</strong> — {esc(test["result"])}</li>' for test in evidence["checks"])
+    limits = "".join(f'<li>{esc(item)}</li>' for item in evidence["limitations"])
+    audio = ROOT / "docs/piano-preview.wav"
+    audio_block = f'<audio controls preload="none" src="{media(audio, "audio/wav")}"></audio><p>A synthetic edited phrase rendered by the actual browser audio engine. No source document is embedded.</p>' if audio.exists() else ""
+    report = f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Prima · Implementation & verification</title>
+<style>*{{box-sizing:border-box}}body{{margin:0;background:#f5f3ed;color:#29332a;font:15px/1.7 system-ui,sans-serif}}main{{max-width:1120px;margin:auto;padding:48px 24px}}header{{border-bottom:1px solid #ccd2c2;padding-bottom:30px}}h1,h2{{font-family:Georgia,serif;font-weight:400}}h1{{font-size:52px;line-height:1.1;margin:16px 0}}h2{{font-size:30px;margin:38px 0 12px}}p{{max-width:850px}}.eyebrow{{letter-spacing:2px;font-size:11px;color:#69795c}}.tag{{display:inline-block;background:#e5ecdb;color:#3a5432;border-radius:20px;padding:5px 13px;font-size:12px;margin:4px}}a{{color:#91452e;text-underline-offset:3px}}.cards{{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:25px 0}}.card{{background:#fffef7;border:1px solid #dde1d2;padding:22px;border-radius:12px}}.card strong{{font:30px Georgia,serif;display:block;color:#954c33}}.card small{{color:#617052}}.screens{{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}}figure{{margin:0;padding:12px;background:#fffef7;border:1px solid #dde1d2;border-radius:10px}}img{{width:100%;height:auto;display:block}}figcaption{{font-size:12px;padding:9px;color:#637355}}figure:nth-child(n+3) img{{max-height:780px;object-fit:contain;object-position:top}}table{{width:100%;border-collapse:collapse;background:#fffef7;font-size:13px}}th,td{{padding:13px;text-align:left;border-bottom:1px solid #dde1d2;vertical-align:top}}th{{background:#e9edde;font-size:11px;letter-spacing:1px}}td:nth-child(2){{white-space:nowrap;color:#875235;font-weight:700}}code{{background:#e9edde;border-radius:4px;padding:2px 6px;font-size:12px}}li{{margin:9px 0}}.callout{{border-left:3px solid #9a5038;background:#fffaf0;padding:16px 22px}}footer{{border-top:1px solid #ccd2c2;padding-top:20px;margin-top:40px;font-size:12px;color:#617052}}audio{{width:100%;max-width:600px}}@media(max-width:700px){{.screens,.cards{{grid-template-columns:1fr}}h1{{font-size:40px}}main{{padding:28px 17px}}table{{font-size:11px}}td,th{{padding:9px}}}}</style>
+<main><header><div class="eyebrow">LOCAL SCORE RECOGNITION · ENGINEERING REPORT · 5 NOVEMBER 2026</div><h1>From a printed melody<br>to a grand piano.</h1><p>Prima reads a score image or PDF on your computer, turns each staff into an editable sequence, and plays it with 88 locally bundled grand-piano samples.</p><span class="tag">No cloud score processing</span><span class="tag">Python + OpenCV + Web Audio</span><span class="tag">Independent review</span></header>
+<div class="cards"><div class="card"><strong>{esc(str(evidence["python_tests"]))}</strong><small>Python checks passed</small></div><div class="card"><strong>{esc(str(evidence["node_tests"]))}</strong><small>JavaScript checks passed</small></div><div class="card"><strong>{esc(evidence["minimum_review"])}</strong><small>Lowest independent dimension score</small></div></div>
+<h2>What changed, and why</h2><p>The repository began empty. It now includes content-based PDF/image decoding, bounded in-memory uploads, staff geometry and glyph recognition, diatonic pitch mapping, key and accidental scope, rhythm estimation, a responsive review interface, and sampled piano playback. Each staff is a separate practice phrase so unrelated exercises are easy to select.</p><p>Image reading is imperfect. The app shows note markers, explicit scope warnings, heuristic reading indicators, and controls to correct notes, rests, lengths, clef, and key. MIDI and rendered WAV exports reflect those corrections, tempo, and transposition.</p>
+<p>The audio scheduler uses the Web Audio clock, with cancellation tokens and short release fades. Regression fixes cover isolated flags near slurs, symbol/beam confusion, staff-switch seek state, stale audition highlights, keyboard upload, and accessible secondary text.</p>
+<h2>Run it locally</h2><p>From the project folder, run <code>.\\start.ps1</code>, or install <code>requirements.txt</code> in a Python virtual environment and run <code>python app.py</code>. Open <code>http://127.0.0.1:8765</code>. The server binds only to loopback. Initial dependency installation uses the network; score processing and piano playback use local files thereafter.</p>
+<h2>Before and after import</h2><p>These real dev-server screenshots use original synthetic notation. The original workspace had no application; “before” here shows the app before a score is imported.</p><div class="screens">{pictures}</div>
+<h2>Hear the rendered piano</h2>{audio_block}
+<h2>Verification evidence</h2><ul>{tests}</ul><p>{esc(evidence["private_score_summary"])}</p><p>{esc(evidence["audio_summary"])}</p><p>{esc(evidence["browser_summary"])}</p>
+<h2>Independent assessment</h2><p>The separate reviewer defined the rubric before final assessment and reported failures for correction. Scores describe the documented clean printed monophonic scope and the evidence inspected; they are not an accuracy guarantee for arbitrary music.</p><table><thead><tr><th>Dimension</th><th>Score</th><th>Evidence and basis</th></tr></thead><tbody>{scores}</tbody></table>
+<h2>Remaining limits</h2><div class="callout"><ul>{limits}</ul></div>
+<h2>Source, issues and review</h2><p><a href="https://github.com/DupeisTaken/staff2audio">Private GitHub repository</a> · <a href="https://github.com/DupeisTaken/staff2audio/issues/1">Implementation issue #1</a> · <a href="https://github.com/DupeisTaken/staff2audio/issues/2">Regression issue #2</a> · <a href="{esc(evidence["pr_url"])}">Ready-for-review pull request</a></p><p>Tests: <code>python -m pytest -q</code> and <code>node --test tests/*.test.mjs</code>. Exact environment: <code>requirements-lock.txt</code>. Core design: <code>docs/recognition.md</code>, <code>docs/audio.md</code>, and <code>docs/review-findings.md</code>.</p>
+<footer>AGPL-3.0-or-later application; Bravura font under SIL OFL 1.1; FluidR3 piano samples with retained attribution and licenses. No credentials, private participant data, original PDF pages, or private score extracts are included. All media is embedded: this report is a standalone HTML artifact.</footer></main></html>'''
+    target = ROOT / "docs/implementation-report.html"
+    target.write_text(report, encoding="utf-8")
+    print(f"{target} ({target.stat().st_size:,} bytes)")
+
+
+if __name__ == "__main__":
+    build()
