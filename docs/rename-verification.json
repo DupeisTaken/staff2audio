@@ -2,11 +2,23 @@
   "date": "2026-11-08",
   "baseline": "913555a",
   "issue_url": "https://github.com/DupeisTaken/staff2audio/issues/11",
-  "pr_url": null,
+  "pr_url": "https://github.com/DupeisTaken/staff2audio/pull/12",
   "tests": [
-    {"name": "Python regressions, launcher and archive contracts", "passed": 76, "command": ".venv\\Scripts\\python.exe -m pytest -q"},
-    {"name": "JavaScript regressions", "passed": 125, "command": "npm test"},
-    {"name": "Real-browser integration", "passed": 7, "command": "STAFF2AUDIO_BROWSER_CHANNEL=msedge npm run test:browser"}
+    {
+      "name": "Python regressions, launcher and archive contracts",
+      "passed": 76,
+      "command": ".venv\\Scripts\\python.exe -m pytest -q"
+    },
+    {
+      "name": "JavaScript regressions",
+      "passed": 125,
+      "command": "npm test"
+    },
+    {
+      "name": "Real-browser integration",
+      "passed": 7,
+      "command": "STAFF2AUDIO_BROWSER_CHANNEL=msedge npm run test:browser"
+    }
   ],
   "additional_checks": [
     "JavaScript syntax: static/app.js and tests/bpm-presets.browser.mjs",
