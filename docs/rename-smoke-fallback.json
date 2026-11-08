@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "startup_seconds": 4.245,
+  "total_seconds": 6.779,
+  "piano_samples": 88,
+  "image_staves": 2,
+  "pdf_staves": 2,
+  "default_port_fallback": true,
+  "empty_working_directory": true,
+  "python_removed_from_path": true
+}

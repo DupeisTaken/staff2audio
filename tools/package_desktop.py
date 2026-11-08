@@ -15,8 +15,8 @@ TARGETS = ("windows-x64", "linux-x64", "macos-x64", "macos-arm64")
 def package(target: str) -> Path:
     if target not in TARGETS:
         raise ValueError("Unsupported release target")
-    name = f"Prima-{target}"
-    executable = "Prima.exe" if target.startswith("windows") else "Prima"
+    name = f"staff2audio-{target}"
+    executable = "staff2audio.exe" if target.startswith("windows") else "staff2audio"
     stage = ROOT / "build" / "archives" / name
     stage.mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT / "dist" / executable, stage / executable)

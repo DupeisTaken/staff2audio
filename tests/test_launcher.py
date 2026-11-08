@@ -82,14 +82,14 @@ def test_no_browser_still_announces_url(monkeypatch, capsys):
     monkeypatch.setattr(launcher, "open_browser", lambda _: pytest.fail("unexpected browser"))
     launcher.announce_when_ready(SimpleNamespace(started=True), "http://127.0.0.1:1",
                                  threading.Event(), browser=False)
-    assert "Prima is ready: http://127.0.0.1:1" in capsys.readouterr().out
+    assert "staff2audio is ready: http://127.0.0.1:1" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("original", [None, "/system/libraries"])
 def test_frozen_linux_browser_gets_system_library_path(monkeypatch, original):
     monkeypatch.setattr(launcher.sys, "frozen", True, raising=False)
     monkeypatch.setattr(launcher.sys, "platform", "linux")
-    monkeypatch.setenv("LD_LIBRARY_PATH", "/tmp/prima-libraries")
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/tmp/staff2audio-libraries")
     if original is None:
         monkeypatch.delenv("LD_LIBRARY_PATH_ORIG", raising=False)
     else:
@@ -102,4 +102,4 @@ def test_frozen_linux_browser_gets_system_library_path(monkeypatch, original):
     with pytest.raises(OSError):
         launcher.open_browser("unused")
     assert seen == [original]
-    assert launcher.os.environ["LD_LIBRARY_PATH"] == "/tmp/prima-libraries"
+    assert launcher.os.environ["LD_LIBRARY_PATH"] == "/tmp/staff2audio-libraries"

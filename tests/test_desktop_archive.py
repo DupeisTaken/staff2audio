@@ -11,19 +11,19 @@ from tools import package_desktop
 @pytest.mark.parametrize("target", ["windows-x64", "linux-x64", "macos-arm64"])
 def test_archive_payload_licenses_checksum_and_unix_mode(tmp_path, monkeypatch, target):
     monkeypatch.setattr(package_desktop, "ROOT", tmp_path)
-    executable = "Prima.exe" if target == "windows-x64" else "Prima"
+    executable = "staff2audio.exe" if target == "windows-x64" else "staff2audio"
     binary = b"synthetic executable bytes for archive verification"
     for path, content in {
         f"dist/{executable}": binary,
         "LICENSE": b"Application license",
-        "docs/desktop-quickstart.txt": b"Start Prima in your browser",
+        "docs/desktop-quickstart.txt": b"Start staff2audio in your browser",
         "build/desktop-licenses/dependency/LICENSE": b"Dependency license",
     }.items():
         destination = tmp_path / path
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(content)
     archive = package_desktop.package(target)
-    name = f"Prima-{target}"
+    name = f"staff2audio-{target}"
     if target == "windows-x64":
         with zipfile.ZipFile(archive) as bundle:
             files = {path: bundle.read(path) for path in bundle.namelist()}

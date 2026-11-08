@@ -824,7 +824,7 @@ function download(blob, extension, staffIndex = state.selected) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `prima-staff-${staffIndex + 1}.${extension}`;
+  anchor.download = `staff2audio-staff-${staffIndex + 1}.${extension}`;
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

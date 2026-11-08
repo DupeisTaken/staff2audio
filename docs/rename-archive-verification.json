@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "archive": "staff2audio-windows-x64.zip",
+  "archive_bytes": 98835562,
+  "executable": "staff2audio.exe",
+  "executable_bytes": 99268156,
+  "sha256": "606f6cb0a27b9693b79ecd3aa88cc436ba924bebd63c82a2ab065ae0be0bdbcb",
+  "entries": 45,
+  "executable_matches_smoke_tested_binary": true,
+  "renamed_quickstart": true,
+  "legacy_named_entries": false
+}

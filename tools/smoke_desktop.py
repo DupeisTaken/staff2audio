@@ -37,7 +37,7 @@ def smoke(command: list[str], *, fallback: bool = False) -> dict:
     environment["PATH"] = str(Path(os.environ.get("SystemRoot", "/usr")) / "System32") if os.name == "nt" else "/usr/bin:/bin"
     lines = []
     ready = threading.Event()
-    with tempfile.TemporaryDirectory(prefix="prima-smoke-") as directory, socket.socket() as occupied:
+    with tempfile.TemporaryDirectory(prefix="staff2audio-smoke-") as directory, socket.socket() as occupied:
         if fallback:
             try:
                 occupied.bind(("127.0.0.1", 8765))
@@ -55,7 +55,7 @@ def smoke(command: list[str], *, fallback: bool = False) -> dict:
         def read_output():
             for line in process.stdout:
                 lines.append(line)
-                if "Prima is ready:" in line:
+                if "staff2audio is ready:" in line:
                     ready.set()
         reader = threading.Thread(target=read_output, daemon=True)
         reader.start()
@@ -65,7 +65,7 @@ def smoke(command: list[str], *, fallback: bool = False) -> dict:
                 if process.poll() is not None or time.monotonic() > deadline:
                     raise AssertionError("Executable did not become ready:\n" + "".join(lines))
             startup_seconds = round(time.monotonic() - started, 3)
-            url = re.search(r"Prima is ready: (http://127\.0\.0\.1:\d+)", "".join(lines)).group(1)
+            url = re.search(r"staff2audio is ready: (http://127\.0\.0\.1:\d+)", "".join(lines)).group(1)
             if fallback:
                 check(not url.endswith(":8765"), "Did not avoid occupied default port")
             # Bypass proxy environment variables even on corporate build hosts.
@@ -75,7 +75,7 @@ def smoke(command: list[str], *, fallback: bool = False) -> dict:
                     check(response.headers.get("Cache-Control") == "no-store", "Missing privacy header")
                     return response.read()
             def post(path, data, filename, page=1):
-                boundary = "prima-desktop-smoke-boundary"
+                boundary = "staff2audio-desktop-smoke-boundary"
                 body = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\n'
                         f'Content-Type: application/octet-stream\r\n\r\n').encode() + data
                 body += (f'\r\n--{boundary}\r\nContent-Disposition: form-data; name="page"\r\n\r\n{page}'
@@ -86,7 +86,11 @@ def smoke(command: list[str], *, fallback: bool = False) -> dict:
                     return json.load(response)
             check(json.loads(get("/api/health")) == {"status": "ok", "local": True}, "Health failed")
             for path in ("/", "/static/app.js", "/static/style.css", "/static/piano.js", "/static/THIRD_PARTY_NOTICES.txt"):
-                check(len(get(path)) > 100, f"Missing asset: {path}")
+                payload = get(path)
+                check(len(payload) > 100, f"Missing asset: {path}")
+                if path == "/":
+                    check(b"<title>staff2audio" in payload and b'aria-label="staff2audio home"' in payload,
+                          "Packaged application branding is out of date")
             check("pymupdf" in json.loads(get("/static/licenses/packages.json")), "Missing bundled licenses")
             piano = json.loads(get("/static/audio/grand-piano.json"))
             # Validate the actual MP3 payloads rather than only the JSON response.

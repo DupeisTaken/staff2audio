@@ -30,7 +30,7 @@ MAX_PIXELS = 30_000_000
 MAX_EDGE = 2600
 # Serial CV work keeps the desktop responsive and bounds image memory.
 recognition_lock = threading.RLock()
-app = FastAPI(title="Prima · Local score to piano", docs_url=None, redoc_url=None)
+app = FastAPI(title="staff2audio · Local score to piano", docs_url=None, redoc_url=None)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 

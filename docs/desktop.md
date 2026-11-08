@@ -1,6 +1,6 @@
 # Portable desktop architecture
 
-Prima keeps the recognition and browser layers and adds a native distribution
+staff2audio keeps the recognition and browser layers and adds a native distribution
 layer. Each download contains one self-contained executable plus optional
 license/reference files. The executable runs without the source tree, a Python
 installation, Node, external PDF tools, cloud accounts or asset downloads. A
@@ -39,7 +39,7 @@ Pure-Python asyncio/h11/lifespan drivers are explicit in the frozen module graph
 Assets resolve relative to module `__file__`, which PyInstaller maps into its
 extraction directory. No current-directory changes or project-relative paths
 are needed. On frozen Linux launches, the external browser receives the original
-system library search path rather than Prima's private bundled library path.
+system library search path rather than staff2audio's private bundled library path.
 The console remains open; Ctrl+C stops the server. Browser close is deliberately
 independent of server shutdown because multiple tabs can share the local service.
 
@@ -51,16 +51,16 @@ Use an isolated Python 3.12 environment on the target OS:
 python -m pip install -r requirements-build.txt -r requirements-dev.txt -c requirements-lock.txt
 python -m pytest -q
 python -m tools.build_desktop
-python -m tools.smoke_desktop dist/Prima
-python -m tools.smoke_desktop dist/Prima --fallback
+python -m tools.smoke_desktop dist/staff2audio
+python -m tools.smoke_desktop dist/staff2audio --fallback
 python -m tools.package_desktop --target linux-x64
 ```
 
-On Windows use `dist/Prima.exe` and `--target windows-x64`; macOS target names
+On Windows use `dist/staff2audio.exe` and `--target windows-x64`; macOS target names
 are `macos-x64` and `macos-arm64`. Runtime dependency constraints reuse
 `requirements-lock.txt`; build tools are pinned in `requirements-build.txt`.
 Native binary and Python platform dependencies mean this is a repeatable build
-recipe, not a guarantee of identical binary bytes. `Prima.spec` is invoked by
+recipe, not a guarantee of identical binary bytes. `staff2audio.spec` is invoked by
 the build helper after copying installed runtime dependency license metadata.
 Do not invoke it directly without that preparation step.
 
@@ -68,10 +68,10 @@ Do not invoke it directly without that preparation step.
 
 | Download | Runner | Support baseline |
 | --- | --- | --- |
-| `Prima-windows-x64.zip` | Windows 2022 x64 | Windows 10/11 x64 |
-| `Prima-linux-x64.tar.gz` | Ubuntu 22.04 x64 | glibc 2.35+ Linux x64 desktop |
-| `Prima-macos-x64.tar.gz` | macOS 15 Intel | macOS 15+ Intel |
-| `Prima-macos-arm64.tar.gz` | macOS 15 ARM | macOS 15+ Apple Silicon |
+| `staff2audio-windows-x64.zip` | Windows 2022 x64 | Windows 10/11 x64 |
+| `staff2audio-linux-x64.tar.gz` | Ubuntu 22.04 x64 | glibc 2.35+ Linux x64 desktop |
+| `staff2audio-macos-x64.tar.gz` | macOS 15 Intel | macOS 15+ Intel |
+| `staff2audio-macos-arm64.tar.gz` | macOS 15 ARM | macOS 15+ Apple Silicon |
 
 PRs affecting runtime/packaging, pushes to main, and manual dispatches build
 downloadable Actions artifacts. At most two matrix jobs run concurrently. Each
