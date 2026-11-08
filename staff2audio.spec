@@ -17,4 +17,4 @@ analysis = Analysis(
 )
 pyz = PYZ(analysis.pure)
 exe = EXE(pyz, analysis.scripts, analysis.binaries, analysis.datas, [],
-          name="Prima", debug=False, strip=False, upx=False, console=True)
+          name="staff2audio", debug=False, strip=False, upx=False, console=True)

@@ -35,7 +35,7 @@ def reserve_listener(port: int | None) -> socket.socket:
 
 
 def open_browser(url: str) -> bool:
-    # Frozen Linux libraries belong to Prima, not to the external browser.
+    # Frozen Linux libraries belong to staff2audio, not to the external browser.
     key = "LD_LIBRARY_PATH"
     saved = os.environ.get(key)
     if getattr(sys, "frozen", False) and sys.platform.startswith("linux"):
@@ -57,8 +57,8 @@ def announce_when_ready(server, url: str, stopped: threading.Event, *, browser: 
     """Only announce/open our own successfully started server."""
     while not stopped.is_set():
         if server.started:
-            print(f"Prima is ready: {url}", flush=True)
-            print("Keep this window open. Press Ctrl+C to stop Prima.", flush=True)
+            print(f"staff2audio is ready: {url}", flush=True)
+            print("Keep this window open. Press Ctrl+C to stop staff2audio.", flush=True)
             if browser:
                 try:
                     if not open_browser(url):
@@ -70,7 +70,7 @@ def announce_when_ready(server, url: str, stopped: threading.Event, *, browser: 
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Prima local score-to-piano player")
+    parser = argparse.ArgumentParser(description="staff2audio local score-to-piano player")
     parser.add_argument("--port", type=int, default=None,
                         help="use a specific port (0 chooses a free port); default: 8765 or a free port")
     parser.add_argument("--no-browser", action="store_true", help="print the local URL without opening a browser")
@@ -80,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         listener = reserve_listener(args.port)
     except OSError as exc:
-        parser.exit(1, f"Cannot start Prima on the requested port: {exc}. Try --port 0.\n")
+        parser.exit(1, f"Cannot start staff2audio on the requested port: {exc}. Try --port 0.\n")
     with listener:
         # A direct import keeps the frozen module graph explicit. Pin Uvicorn's
         # pure-Python drivers instead of discovering optional native extras.

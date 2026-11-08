@@ -60,7 +60,7 @@ def main():
     # No global install, shared-cache cleanup, or optional executable compressor.
     subprocess.run([sys.executable, "-m", "PyInstaller", "--noconfirm",
                     "--distpath", str(ROOT / "dist"), "--workpath", str(ROOT / "build" / "pyinstaller"),
-                    str(ROOT / "Prima.spec")], cwd=ROOT, check=True)
+                    str(ROOT / "staff2audio.spec")], cwd=ROOT, check=True)
 
 
 if __name__ == "__main__":

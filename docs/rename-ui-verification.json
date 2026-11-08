@@ -1,0 +1,125 @@
+{
+  "status": "passed",
+  "browser": "Microsoft Edge (Playwright)",
+  "language": "en (only available language)",
+  "title": "staff2audio · Score to piano",
+  "homeLabel": "staff2audio home",
+  "helpHeading": "A small guide to staff2audio",
+  "downloads": [
+    "staff2audio-staff-1.mid",
+    "staff2audio-staff-1.wav"
+  ],
+  "layouts": [
+    {
+      "width": 1440,
+      "documentWidth": 1440,
+      "brand": {
+        "left": 72,
+        "right": 397.234375,
+        "top": 23.5,
+        "bottom": 61.5
+      },
+      "badge": {
+        "left": 1114.609375,
+        "right": 1222.46875,
+        "top": 34.5,
+        "bottom": 50.5
+      },
+      "help": {
+        "left": 1272.46875,
+        "right": 1368,
+        "top": 24,
+        "bottom": 61
+      }
+    },
+    {
+      "width": 1024,
+      "documentWidth": 1024,
+      "brand": {
+        "left": 51.1875,
+        "right": 376.421875,
+        "top": 23.5,
+        "bottom": 61.5
+      },
+      "badge": {
+        "left": 719.421875,
+        "right": 827.28125,
+        "top": 34.5,
+        "bottom": 50.5
+      },
+      "help": {
+        "left": 877.28125,
+        "right": 972.8125,
+        "top": 24,
+        "bottom": 61
+      }
+    },
+    {
+      "width": 768,
+      "documentWidth": 768,
+      "brand": {
+        "left": 30.71875,
+        "right": 215.34375,
+        "top": 23.5,
+        "bottom": 61.5
+      },
+      "badge": {
+        "left": 498.890625,
+        "right": 606.75,
+        "top": 34.5,
+        "bottom": 50.5
+      },
+      "help": {
+        "left": 641.75,
+        "right": 737.28125,
+        "top": 24,
+        "bottom": 61
+      }
+    },
+    {
+      "width": 390,
+      "documentWidth": 390,
+      "brand": {
+        "left": 15.59375,
+        "right": 180.296875,
+        "top": 17.5,
+        "bottom": 50.5
+      },
+      "badge": {
+        "left": 246.90625,
+        "right": 338.953125,
+        "top": 27,
+        "bottom": 41
+      },
+      "help": {
+        "left": 353.953125,
+        "right": 374.40625,
+        "top": 13,
+        "bottom": 55
+      }
+    },
+    {
+      "width": 320,
+      "documentWidth": 320,
+      "brand": {
+        "left": 12.796875,
+        "right": 177.5,
+        "top": 17.5,
+        "bottom": 50.5
+      },
+      "badge": {
+        "left": 192.5,
+        "right": 271.75,
+        "top": 20,
+        "bottom": 48
+      },
+      "help": {
+        "left": 286.75,
+        "right": 307.203125,
+        "top": 13,
+        "bottom": 55
+      }
+    }
+  ],
+  "pageErrors": []
+}

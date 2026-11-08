@@ -1,4 +1,4 @@
-# Prima · Staff2Audio
+# staff2audio
 
 Turn a screenshot or PDF page of printed music into a staff you can inspect, correct, and hear on a sampled grand piano. Recognition and playback run on your computer. The application includes an original two-staff example and requires no cloud account, API key, paid recognition service, Node build, or external runtime assets.
 
@@ -10,7 +10,7 @@ This is a focused local practice tool for **clean, printed, monophonic notation*
 portable executables built by GitHub Actions for **Windows x64, Linux x64, macOS
 Intel and macOS Apple Silicon** after a `v*` tag passes all four packaged checks.
 PR/manual builds also provide downloadable Actions artifacts. Extract the archive
-and run `Prima.exe` on Windows, or `./Prima` from a terminal on macOS/Linux. Prima
+and run `staff2audio.exe` on Windows, or `./staff2audio` from a terminal on macOS/Linux. staff2audio
 opens your browser once ready and automatically chooses a free local port.
 
 **No Python, Node, package installation, API keys, external PDF tools or runtime
@@ -45,7 +45,7 @@ python3 -m venv .venv
 .venv/bin/python app.py
 ```
 
-Open [Prima on your computer](http://127.0.0.1:8765). Stop the server with `Ctrl+C`. The server binds to `127.0.0.1`; keep that default. Initial package installation requires internet access. After installation, the included recognition font, piano recordings, frontend, and demo work offline. Opening `static/index.html` directly does not start the backend.
+Open [staff2audio on your computer](http://127.0.0.1:8765). Stop the server with `Ctrl+C`. The server binds to `127.0.0.1`; keep that default. Initial package installation requires internet access. After installation, the included recognition font, piano recordings, frontend, and demo work offline. Opening `static/index.html` directly does not start the backend.
 
 The launcher chooses another port automatically if 8765 is occupied. Use `python run.py --port 0` to always choose a free port, `--port 8766` to require a specific port, or `--no-browser` to print the address without opening it. Browsers require a click before audio can start; click a piano key or Play staff if sound has not been enabled yet.
 
@@ -88,7 +88,7 @@ Responses request no-store caching and include a restrictive Content Security Po
 | Component | Responsibility |
 | --- | --- |
 | `run.py` | Source/frozen launcher, reserved loopback socket, automatic port selection and browser readiness |
-| `Prima.spec`, `tools/build_desktop.py`, `.github/workflows/desktop.yml` | Self-contained executables, bundled dependencies/assets/licenses, native CI smoke checks and tagged releases |
+| `staff2audio.spec`, `tools/build_desktop.py`, `.github/workflows/desktop.yml` | Self-contained executables, bundled dependencies/assets/licenses, native CI smoke checks and tagged releases |
 | `app.py` | FastAPI local HTTP service, request/file bounds, raster/PDF decoding, serial recognition, in-memory preview responses |
 | `staff2audio/omr.py` | Deterministic staff/symbol recognition and confidence/warnings |
 | `staff2audio/music.py` | Clef-relative diatonic pitch, key accidental maps, MIDI/note naming |
@@ -114,11 +114,13 @@ node --test tests/*.test.mjs
 
 Node 24 or newer is recommended for JavaScript tests and the optional sample-bundling maintenance tool. The application itself does not require Node. Python tests verify actual file decoding and recognizer output on original fixtures; API tests replace the recognizer with lightweight deterministic output so HTTP/file/privacy cases do not repeatedly run CV. Audio tests use a fake audio clock and validate MIDI/WAV bytes; additionally verify real MP3 decoding, sound, downloads, desktop/mobile layouts, and keyboard controls in a browser after UI/audio changes. A passing synthetic suite does not prove recognition quality on an unseen score.
 
-For the real-browser BPM preset regressions, run `npm ci`, `npx playwright install chromium`, then `npm run test:browser` after installing Python development dependencies. The suite starts and stops its own loopback server, exercises the included synthetic example and a generated two-page PDF, checks actual MIDI/WAV downloads and active playback, and verifies five viewport widths. It uses `.venv\\Scripts\\python.exe` on Windows when present, or `python`; set `PRIMA_PYTHON` to select another local interpreter. Set `PRIMA_BROWSER_CHANNEL=msedge` to use an installed Edge browser instead of bundled Chromium. The application-check workflow runs the Chromium suite in CI.
+For the real-browser BPM preset regressions, run `npm ci`, `npx playwright install chromium`, then `npm run test:browser` after installing Python development dependencies. The suite starts and stops its own loopback server, exercises the included synthetic example and a generated two-page PDF, checks actual MIDI/WAV downloads and active playback, and verifies five viewport widths. It uses `.venv\\Scripts\\python.exe` on Windows when present, or `python`; set `STAFF2AUDIO_PYTHON` to select another local interpreter. Set `STAFF2AUDIO_BROWSER_CHANNEL=msedge` to use an installed Edge browser instead of bundled Chromium. The previous `PRIMA_*` test environment variables remain supported as aliases. The application-check workflow runs the Chromium suite in CI.
 
 Create the original demo fixture with `.venv\Scripts\python.exe -m tools.generate_fixtures` (writes `tmp/demo-score.png`). Rebuild the included audio bundle, only when intentionally maintaining assets, with `node tools/audio-bundle.mjs`. That tool downloads the pinned upstream revision, checks SHA-256, and extracts literal MP3 strings without executing downloaded code. Normal playback never runs it or fetches its upstream URL.
 
 ## Verification report
+
+The [app rename report](docs/rename-report.html) records the change to **staff2audio**, including desktop/mobile screenshots and verification. Earlier reports retain the Prima branding used when their evidence was captured.
 
 Portable executable packaging has its own [self-contained verification report](docs/desktop-report.html)
 and [inspectable evidence](docs/desktop-verification.json), including installation before/after,

@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-08",
+  "baseline": "913555a",
+  "issue_url": "https://github.com/DupeisTaken/staff2audio/issues/11",
+  "pr_url": "https://github.com/DupeisTaken/staff2audio/pull/12",
+  "tests": [
+    {
+      "name": "Python regressions, launcher and archive contracts",
+      "passed": 76,
+      "command": ".venv\\Scripts\\python.exe -m pytest -q"
+    },
+    {
+      "name": "JavaScript regressions",
+      "passed": 125,
+      "command": "npm test"
+    },
+    {
+      "name": "Real-browser integration",
+      "passed": 7,
+      "command": "STAFF2AUDIO_BROWSER_CHANNEL=msedge npm run test:browser"
+    }
+  ],
+  "additional_checks": [
+    "JavaScript syntax: static/app.js and tests/bpm-presets.browser.mjs",
+    "Desktop/mobile screenshots visually inspected",
+    "Branding, accessible home link, guide, footer and exact MIDI/WAV filenames verified in Edge",
+    "Header fit verified at 1440, 1024, 768, 390 and 320 px",
+    "Windows native executable built using tools.build_desktop",
+    "Packaged executable smoke checks with free port and occupied default port",
+    "Windows ZIP checksum, executable identity, quickstart and entry names verified",
+    "git diff --check"
+  ],
+  "limitations": [
+    "Local native build and packaged runtime verification were performed on Windows x64. Linux and both macOS targets use the updated CI workflow and were not executed locally.",
+    "No tagged release was published. Existing downloaded executables and historical release assets retain their previous names.",
+    "Historical verification reports, source generators for those historical reports and captured evidence keep the Prima branding present at the time.",
+    "Browser layout verification covered the app's sole available English interface. It does not certify other browser engines or operating systems."
+  ]
+}

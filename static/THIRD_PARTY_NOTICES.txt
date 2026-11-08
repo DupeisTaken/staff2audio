@@ -1,4 +1,4 @@
-Prima application: GNU Affero General Public License v3.0 or later (see /LICENSE).
+staff2audio application: GNU Affero General Public License v3.0 or later (see /LICENSE).
 PyMuPDF is used under its GNU AGPL v3 license. See https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright
 Bravura music font: Copyright Steinberg Media Technologies GmbH, SIL Open Font License 1.1 (staff2audio/assets/Bravura-LICENSE.txt).
 Sampled piano: FluidR3 GM by Frank Wen, packaged by Benjamin Gleitzman (CC BY 3.0 US, upstream repository MIT). Full attribution and retained licenses: /static/audio/ATTRIBUTION.md

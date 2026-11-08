@@ -10,9 +10,9 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 test('BPM presets in the real local application', { timeout: 90000 }, async (t) => {
-  const python = process.env.PRIMA_PYTHON ||
+  const python = process.env.STAFF2AUDIO_PYTHON || process.env.PRIMA_PYTHON ||
     (existsSync('.venv/Scripts/python.exe') ? '.venv/Scripts/python.exe' : 'python');
-  const temporary = await mkdtemp(join(tmpdir(), 'prima-bpm-'));
+  const temporary = await mkdtemp(join(tmpdir(), 'staff2audio-bpm-'));
   const server = spawn(python, ['run.py', '--port', '0', '--no-browser'], { windowsHide: true });
   let browser;
   t.after(async () => {
@@ -28,13 +28,15 @@ test('BPM presets in the real local application', { timeout: 90000 }, async (t) 
     server.stderr.on('data', data => { output += data; });
     server.stdout.on('data', data => {
       output += data;
-      const match = /Prima is ready: (http:\/\/127\.0\.0\.1:\d+)/.exec(output);
+      const match = /staff2audio is ready: (http:\/\/127\.0\.0\.1:\d+)/.exec(output);
       if (match) { clearTimeout(timer); resolve(match[1]); }
     });
   });
+  // Keep existing local browser-test setups working after the application rename.
+  const browserChannel = process.env.STAFF2AUDIO_BROWSER_CHANNEL || process.env.PRIMA_BROWSER_CHANNEL;
   browser = await chromium.launch({
     headless: true,
-    ...(process.env.PRIMA_BROWSER_CHANNEL ? { channel: process.env.PRIMA_BROWSER_CHANNEL } : {}),
+    ...(browserChannel ? { channel: browserChannel } : {}),
   });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
   const errors = [];
@@ -49,7 +51,9 @@ test('BPM presets in the real local application', { timeout: 90000 }, async (t) 
   const downloadBytes = async (id) => {
     const pending = page.waitForEvent('download');
     await page.locator(id).click();
-    return readFile(await (await pending).path());
+    const download = await pending;
+    assert.match(download.suggestedFilename(), /^staff2audio-staff-\d+\.(mid|wav)$/);
+    return readFile(await download.path());
   };
   const midiTempo = bytes => {
     const offset = bytes.indexOf(Buffer.from([0xff, 0x51, 0x03]));
@@ -59,6 +63,8 @@ test('BPM presets in the real local application', { timeout: 90000 }, async (t) 
 
   await t.test('disabled without a staff; presets, manual custom values and reset stay in sync', async () => {
     await page.goto(url);
+    assert.equal(await page.title(), 'staff2audio · Score to piano');
+    assert.equal(await page.getByRole('link', { name: 'staff2audio home' }).isVisible(), true);
     assert.equal(await preset.isDisabled(), true);
     await loadDemo();
     assert.equal(await preset.inputValue(), '72');
@@ -163,7 +169,7 @@ test('BPM presets in the real local application', { timeout: 90000 }, async (t) 
   });
 
   await t.test('desktop, tablet and narrow mobile layouts fit with readable, labeled controls', async () => {
-    const folder = process.env.PRIMA_SCREENSHOTS;
+    const folder = process.env.STAFF2AUDIO_SCREENSHOTS || process.env.PRIMA_SCREENSHOTS;
     if (folder) await mkdir(folder, { recursive: true });
     await preset.selectOption('90');
     for (const width of [1440, 1024, 768, 390, 320]) {
@@ -188,6 +194,7 @@ test('BPM presets in the real local application', { timeout: 90000 }, async (t) 
   evidence.checks = ['disabled state, custom/manual/reset synchronization', 'compound conversion and per-staff persistence',
     'live playback continuity, pause and resume', 'native keyboard selection and focus',
     'real two-page PDF navigation and new-document reset', 'five desktop/tablet/mobile layouts, no page errors'];
-  if (process.env.PRIMA_BROWSER_EVIDENCE)
-    await writeFile(process.env.PRIMA_BROWSER_EVIDENCE, JSON.stringify(evidence, null, 2) + '\n');
+  const evidencePath = process.env.STAFF2AUDIO_BROWSER_EVIDENCE || process.env.PRIMA_BROWSER_EVIDENCE;
+  if (evidencePath)
+    await writeFile(evidencePath, JSON.stringify(evidence, null, 2) + '\n');
 });
