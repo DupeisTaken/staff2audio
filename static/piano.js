@@ -39,7 +39,11 @@ export function nearestSample(midi, buffers) {
   return { buffer: buffers.get(nearest), rate: 2 ** ((midi - nearest) / 12) };
 }
 
-function voice(context, destination, buffers, midi, when, duration, elapsed = 0) {
+function resolveGain(value, fallback = 0.8) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 1 ? value : fallback;
+}
+
+function voice(context, destination, buffers, midi, when, duration, elapsed = 0, peakGain = 0.8) {
   const { buffer, rate } = nearestSample(midi, buffers);
   const offset = elapsed * rate;
   if (offset >= buffer.duration) return null; // A naturally decayed note stays silent after seeking.
@@ -49,9 +53,10 @@ function voice(context, destination, buffers, midi, when, duration, elapsed = 0)
   source.connect(envelope);
   envelope.connect(destination);
   const end = when + duration;
+  const peak = resolveGain(peakGain, 0.8);
   envelope.gain.setValueAtTime(0, when);
-  envelope.gain.linearRampToValueAtTime(0.8, when + Math.min(0.004, duration / 2));
-  envelope.gain.setValueAtTime(0.8, end);
+  envelope.gain.linearRampToValueAtTime(peak, when + Math.min(0.004, duration / 2));
+  envelope.gain.setValueAtTime(peak, end);
   envelope.gain.linearRampToValueAtTime(0, end + RELEASE);
   source.start(when, offset);
   source.stop(end + RELEASE + 0.005);
@@ -61,12 +66,12 @@ function voice(context, destination, buffers, midi, when, duration, elapsed = 0)
 }
 
 export class PianoPlayer {
-  constructor({ onNote = () => {}, onProgress = () => {}, onState = () => {} } = {}) {
-    this.onNote = onNote; this.onProgress = onProgress; this.onState = onState;
+  constructor({ onNote = () => {}, onActiveEvents = () => {}, onProgress = () => {}, onState = () => {} } = {}) {
+    this.onNote = onNote; this.onActiveEvents = onActiveEvents; this.onProgress = onProgress; this.onState = onState;
     this.context = null; this.master = null; this.buffers = new Map();
     this.events = []; this.state = 'stopped'; this.tempo = 90; this.transpose = 0; this.loop = false;
     this._duration = 0; this._beat = 0; this._generation = 0; this._voices = new Set();
-    this._volume = 0.75; this._loading = null; this._timer = null; this._lastNote = undefined;
+    this._volume = 0.75; this._loading = null; this._timer = null; this._lastNote = undefined; this._lastActiveEvents = undefined;
   }
 
   async load() {
@@ -129,7 +134,7 @@ export class PianoPlayer {
     if (this._beat >= duration) this._beat = 0;
     this._anchorBeat = this._beat; this._anchorTime = this.context.currentTime + LEAD;
     this._cycleTime = this._anchorTime; this._cycleFrom = this._beat; this._nextIndex = 0;
-    this.state = 'playing'; this._lastNote = undefined; this.onState('playing');
+    this.state = 'playing'; this._lastNote = undefined; this._lastActiveEvents = undefined; this.onState('playing');
     this._tick();
     this._timer = setInterval(() => this._tick(), 40);
   }
@@ -164,7 +169,7 @@ export class PianoPlayer {
       if (event.midi === null || end <= now) continue;
       const start = Math.max(when, now);
       const elapsed = Math.max(0, this._cycleFrom - event.onset) * secondsPerBeat + Math.max(0, now - when);
-      const item = voice(this.context, this.master, this.buffers, transposeMidi(event.midi, this.transpose), start, end - start, elapsed);
+      const item = voice(this.context, this.master, this.buffers, transposeMidi(event.midi, this.transpose), start, end - start, elapsed, resolveGain(event.gain));
       if (item) { this._voices.add(item); item.onended = () => this._voices.delete(item); }
     }
     const beat = this.currentBeat;
@@ -173,11 +178,19 @@ export class PianoPlayer {
       this._lastNote = active;
       this.onNote(active ? { ...active, playedMidi: transposeMidi(active.midi, this.transpose) } : null);
     }
+    const activeEvents = this.events.filter(e => e.midi !== null && e.onset <= beat && e.onset + e.duration > beat);
+    const activeChanged = !this._lastActiveEvents ||
+      activeEvents.length !== this._lastActiveEvents.length ||
+      activeEvents.some((event, index) => event !== this._lastActiveEvents[index]);
+    if (activeChanged) {
+      this._lastActiveEvents = activeEvents;
+      this.onActiveEvents(activeEvents.map(e => ({ ...e, playedMidi: transposeMidi(e.midi, this.transpose) })));
+    }
     this.onProgress(beat, this._duration);
     if (!this.loop && now >= this._anchorTime + (this._duration - this._anchorBeat) * secondsPerBeat) {
       // Allow the final acoustic release to finish; stop/pause still cancel every voice.
       clearInterval(this._timer); this._timer = null; this._beat = this._duration;
-      this.state = 'stopped'; this.onNote(null); this.onState('stopped');
+      this.state = 'stopped'; this._lastActiveEvents = []; this.onNote(null); this.onActiveEvents([]); this.onState('stopped');
     }
   }
 
@@ -195,24 +208,25 @@ export class PianoPlayer {
     }
     this._voices.clear();
     this._lastNote = undefined;
+    this._lastActiveEvents = undefined;
   }
 
   pause() {
     this._beat = this.currentBeat;
     ++this._generation; this._halt(); this.state = 'paused';
-    this.onNote(null); this.onState('paused'); this.onProgress(this._beat, this._duration);
+    this.onNote(null); this.onActiveEvents([]); this.onState('paused'); this.onProgress(this._beat, this._duration);
   }
 
   stop() {
     ++this._generation; this._halt(); this._beat = 0; this.state = 'stopped';
-    this.onNote(null); this.onState('stopped'); this.onProgress(0, this._duration);
+    this.onNote(null); this.onActiveEvents([]); this.onState('stopped'); this.onProgress(0, this._duration);
   }
 
   seek(beat) {
     const target = clamp(finite(beat, 0), 0, this._duration);
     if (this.state === 'playing') return this.play(this.events, { fromBeat: target });
     ++this._generation; this._beat = target;
-    this.onNote(null); this.onProgress(target, this._duration);
+    this.onNote(null); this.onActiveEvents([]); this.onProgress(target, this._duration);
     return Promise.resolve();
   }
 
@@ -231,6 +245,24 @@ export class PianoPlayer {
     if (item) { this._voices.add(item); item.onended = () => this._voices.delete(item); }
   }
 
+  async previewChord(midis, { arpeggiateSec = 0, duration = 0.85, gain = 0.45 } = {}) {
+    if (!Array.isArray(midis)) return;
+    const pitches = midis.filter(midi => typeof midi === 'number' && Number.isFinite(midi));
+    if (!pitches.length) return;
+    const generation = this._generation;
+    const loading = this.load();
+    await Promise.all([loading, this.context ? this.context.resume() : Promise.resolve()]);
+    if (generation !== this._generation) return;
+    const step = Number.isFinite(arpeggiateSec) && arpeggiateSec > 0 ? arpeggiateSec : 0;
+    const dur = Number.isFinite(duration) && duration > 0 ? duration : 0.85;
+    const peak = resolveGain(gain, 0.45);
+    const start = this.context.currentTime + 0.005;
+    pitches.forEach((midi, index) => {
+      const item = voice(this.context, this.master, this.buffers, transposeMidi(midi), start + index * step, dur, 0, peak);
+      if (item) { this._voices.add(item); item.onended = () => this._voices.delete(item); }
+    });
+  }
+
   async exportWav(events, { tempo = this.tempo, transpose = this.transpose } = {}) {
     const prepared = prepareEvents(events), secondsPerBeat = 60 / tempoValue(tempo);
     const duration = scoreDuration(prepared) * secondsPerBeat + RELEASE + 0.02;
@@ -241,7 +273,7 @@ export class PianoPlayer {
     const context = new Offline(2, Math.max(1, Math.ceil(duration * 44100)), 44100);
     const gain = context.createGain(); gain.gain.value = this._volume; gain.connect(context.destination);
     for (const event of prepared) if (event.midi !== null) voice(context, gain, this.buffers,
-      transposeMidi(event.midi, transpose), event.onset * secondsPerBeat, event.duration * secondsPerBeat);
+      transposeMidi(event.midi, transpose), event.onset * secondsPerBeat, event.duration * secondsPerBeat, 0, resolveGain(event.gain));
     return new Blob([encodeWav(await context.startRendering())], { type: 'audio/wav' });
   }
 
@@ -273,18 +305,27 @@ function variableLength(value) {
   return bytes;
 }
 
+const VOICE_CHANNELS = Object.freeze({ S: 0, A: 1, T: 2, B: 3 });
+
 export function encodeMidi(events, { tempo = 90, transpose = 0 } = {}) {
   const prepared = prepareEvents(events), ticks = 480;
   if (scoreDuration(prepared) * ticks > 0x0fffffff) throw new RangeError('The score is too long for a MIDI file.');
   const micros = Math.round(60000000 / tempoValue(tempo));
+  const useVoiceChannels = prepared.some(e => e.midi !== null && typeof e.voice === 'string' && Object.hasOwn(VOICE_CHANNELS, e.voice));
+  const usedChannels = new Set([0]);
   const changes = [];
   for (const event of prepared) if (event.midi !== null) {
+    const channel = useVoiceChannels && Object.hasOwn(VOICE_CHANNELS, event.voice) ? VOICE_CHANNELS[event.voice] : 0;
+    usedChannels.add(channel);
     const pitch = transposeMidi(event.midi, transpose), start = Math.round(event.onset * ticks);
-    changes.push({ time: start, order: 1, data: [0x90, pitch, 90] });
-    changes.push({ time: Math.max(start + 1, Math.round((event.onset + event.duration) * ticks)), order: 0, data: [0x80, pitch, 0] });
+    changes.push({ time: start, order: 1, data: [0x90 | channel, pitch, 90] });
+    changes.push({ time: Math.max(start + 1, Math.round((event.onset + event.duration) * ticks)), order: 0, data: [0x80 | channel, pitch, 0] });
   }
   changes.sort((a, b) => a.time - b.time || a.order - b.order);
-  const track = [0, 0xff, 0x51, 3, (micros >> 16) & 255, (micros >> 8) & 255, micros & 255, 0, 0xc0, 0];
+  const track = [0, 0xff, 0x51, 3, (micros >> 16) & 255, (micros >> 8) & 255, micros & 255];
+  for (const channel of [...usedChannels].sort((a, b) => a - b)) {
+    track.push(0, 0xc0 | channel, 0);
+  }
   let previous = 0;
   for (const event of changes) { track.push(...variableLength(event.time - previous), ...event.data); previous = event.time; }
   track.push(...variableLength(Math.max(0, Math.round(scoreDuration(prepared) * ticks) - previous)), 0xff, 0x2f, 0);

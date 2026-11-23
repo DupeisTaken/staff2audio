@@ -33,6 +33,52 @@
           >YOUR LOCAL<br />MUSIC COMPANION <span>01 / PIANO</span></span
         >
       </section>
+      <nav class="mode-switcher" role="tablist" aria-label="Workspace modes">
+        <button
+          id="tabScore"
+          class="mode-tab active"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="scoreWorkspace"
+          data-tab="score"
+        >
+          <span class="mode-tab-num">01</span>
+          <span class="mode-tab-label">Score to Piano</span>
+        </button>
+        <button
+          id="tabFourPart"
+          class="mode-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="fourPartWorkspace"
+          data-tab="four-part"
+          tabindex="-1"
+        >
+          <span class="mode-tab-num">02</span>
+          <span class="mode-tab-label">Four-Part Writing (SATB)</span>
+        </button>
+        <button
+          id="tabMelody"
+          class="mode-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="melodyWorkspace"
+          data-tab="melody"
+          tabindex="-1"
+        >
+          <span class="mode-tab-num">03</span>
+          <span class="mode-tab-label">Harmonize Melody (FRQ 7)</span>
+        </button>
+      </nav>
+      <div
+        id="scoreWorkspace"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tabScore"
+      >
       <div class="workspace">
         <aside class="sidebar">
           <section class="card import-card">
@@ -165,10 +211,20 @@
               ></svg>
             </div>
             <div class="score-bottom">
-              <span id="recognitionMeta">CLEAN, PRINTED MELODIES WORK BEST</span
-              ><button id="editButton" class="quiet small" disabled>
-                Review notes <span aria-hidden="true">↗</span>
-              </button>
+              <span id="recognitionMeta">CLEAN, PRINTED MELODIES WORK BEST</span>
+              <div class="score-bottom-actions">
+                <button
+                  id="sendToHarmonizerButton"
+                  class="quiet small bridge-button"
+                  type="button"
+                  disabled
+                >
+                  Harmonize in AP Theory <span aria-hidden="true">→</span>
+                </button>
+                <button id="editButton" class="quiet small" disabled>
+                  Review notes <span aria-hidden="true">↗</span>
+                </button>
+              </div>
             </div>
           </section>
           <section class="card player-card" aria-label="Piano player">
@@ -315,6 +371,575 @@
             practicing. Designed for clear, single-melody staves; handwriting
             and complex scores may need corrections.
           </p>
+        </div>
+      </div>
+      </div>
+      <div
+        id="fourPartWorkspace"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tabFourPart"
+        hidden
+      >
+        <div class="workspace theory-workspace">
+          <aside class="sidebar">
+            <section class="card theory-upload-card">
+              <div class="section-label"><span>01</span> WORKSHEET UPLOAD</div>
+              <label
+                id="fpDropzone"
+                for="fpFileInput"
+                class="dropzone theory-dropzone"
+                tabindex="0"
+                role="button"
+                aria-label="Upload four-part worksheet image or PDF"
+                ><span class="upload-icon" aria-hidden="true">↥</span
+                ><strong>Upload four-part worksheet</strong
+                ><span>Drop an image or PDF, or <u>choose a file</u></span
+                ><small>PNG, JPG, PDF, or Ctrl+V · up to 25 MB</small></label
+              ><input
+                id="fpFileInput"
+                type="file"
+                accept="application/pdf,image/png,image/jpeg,image/webp,image/tiff,image/bmp"
+                hidden
+              />
+              <div id="fpWorksheetInfo" class="file-info theory-worksheet-info" hidden></div>
+              <div id="fpWorksheetPageWrap" class="page-controls theory-page-controls" hidden>
+                <label for="fpWorksheetPageSelect">PDF page</label>
+                <div class="page-switch">
+                  <button
+                    id="fpWorksheetPrevPage"
+                    class="icon-button"
+                    type="button"
+                    aria-label="Previous worksheet PDF page"
+                  >
+                    ‹
+                  </button>
+                  <select id="fpWorksheetPageSelect" aria-label="Worksheet PDF page"></select>
+                  <button
+                    id="fpWorksheetNextPage"
+                    class="icon-button"
+                    type="button"
+                    aria-label="Next worksheet PDF page"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+              <button
+                id="fpClearWorksheet"
+                class="secondary-button small full-width theory-clear-btn"
+                type="button"
+                hidden
+              >
+                ← Return to exercises
+              </button>
+            </section>
+            <section class="card theory-setup-card">
+              <div class="section-label"><span>02</span> EXERCISE &amp; SETUP</div>
+              <label class="theory-field" for="fpExerciseSelect">
+                <span>AP Exercise</span>
+                <select id="fpExerciseSelect"></select>
+              </label>
+              <div class="theory-quick-actions">
+                <button id="fpLoadStarter" class="secondary-button small" type="button">
+                  Reset to Starter
+                </button>
+                <button id="fpLoadAttempt" class="secondary-button small" type="button">
+                  Load Sample Student Draft
+                </button>
+                <button id="fpLoadSolution" class="secondary-button small" type="button">
+                  Load Model Solution
+                </button>
+              </div>
+              <div class="theory-params-grid">
+                <label class="theory-field" for="fpKeyTonic">
+                  <span>Key</span>
+                  <select id="fpKeyTonic">
+                    <option value="C">C</option>
+                    <option value="G">G</option>
+                    <option value="D">D</option>
+                    <option value="A">A</option>
+                    <option value="E">E</option>
+                    <option value="B">B</option>
+                    <option value="F#">F♯</option>
+                    <option value="F">F</option>
+                    <option value="Bb">B♭</option>
+                    <option value="Eb">E♭</option>
+                    <option value="Ab">A♭</option>
+                    <option value="Db">D♭</option>
+                    <option value="Gb">G♭</option>
+                  </select>
+                </label>
+                <label class="theory-field" for="fpKeyMode">
+                  <span>Mode</span>
+                  <select id="fpKeyMode">
+                    <option value="major">Major</option>
+                    <option value="minor">Minor</option>
+                  </select>
+                </label>
+                <label class="theory-field" for="fpTimeSig">
+                  <span>Meter</span>
+                  <select id="fpTimeSig">
+                    <option value="4/4">4/4</option>
+                    <option value="3/4">3/4</option>
+                    <option value="2/4">2/4</option>
+                    <option value="6/8">6/8</option>
+                  </select>
+                </label>
+                <label class="theory-field" for="fpExerciseType">
+                  <span>Prompt Mode</span>
+                  <select id="fpExerciseType">
+                    <option value="figured_bass">Figured Bass (FRQ 5)</option>
+                    <option value="roman_numeral">Roman Numerals (FRQ 6)</option>
+                    <option value="free">Free SATB Sandbox</option>
+                  </select>
+                </label>
+              </div>
+              <div class="theory-chord-btns">
+                <button id="fpAddChord" class="secondary-button small" type="button">
+                  + Chord
+                </button>
+                <button id="fpRemoveChord" class="secondary-button small" type="button">
+                  − Chord
+                </button>
+              </div>
+              <label class="theory-check" for="fpUnlockVoices">
+                <input id="fpUnlockVoices" type="checkbox" />
+                <span>Unlock given voices</span>
+              </label>
+            </section>
+            <section class="card theory-prompt-card">
+              <div class="section-label"><span>03</span> AP PROMPT</div>
+              <p id="fpInstructions" class="theory-instructions"></p>
+              <div id="fpLockedBadges" class="lock-badges"></div>
+            </section>
+          </aside>
+          <div class="main-column">
+            <section class="card theory-staff-card" aria-label="Four-part grand staff">
+              <div class="score-top theory-card-top">
+                <div>
+                  <p class="eyebrow">FOUR-PART WRITING · SATB</p>
+                  <div class="theory-title-row">
+                    <h2 id="fpTitle">Four-Part Writing Studio</h2>
+                    <span id="fpKeyPill" class="theory-pill">C Major · 4/4</span>
+                  </div>
+                </div>
+                <div class="fp-top-actions">
+                  <div
+                    id="fpViewToggle"
+                    class="segmented-control view-toggle"
+                    role="group"
+                    aria-label="Four-part view mode"
+                    hidden
+                  >
+                    <button
+                      id="fpViewWorksheet"
+                      type="button"
+                      class="seg-btn active"
+                      data-view-mode="worksheet"
+                      aria-pressed="true"
+                    >
+                      Worksheet Image
+                    </button>
+                    <button
+                      id="fpViewEngraved"
+                      type="button"
+                      class="seg-btn"
+                      data-view-mode="engraved"
+                      aria-pressed="false"
+                    >
+                      Engraved Staff
+                    </button>
+                  </div>
+                  <button id="fpGradeButton" class="primary-button" type="button">
+                    Grade Four-Part Writing
+                  </button>
+                </div>
+              </div>
+              <div
+                id="fpNotice"
+                class="notice"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></div>
+              <div class="theory-toolbar">
+                <div class="voice-selector" role="group" aria-label="Active voice">
+                  <button id="fpVoiceS" class="voice-pill active" type="button" data-voice="S" aria-pressed="true">S · Soprano</button>
+                  <button id="fpVoiceA" class="voice-pill" type="button" data-voice="A" aria-pressed="false">A · Alto</button>
+                  <button id="fpVoiceT" class="voice-pill" type="button" data-voice="T" aria-pressed="false">T · Tenor</button>
+                  <button id="fpVoiceB" class="voice-pill" type="button" data-voice="B" aria-pressed="false">B · Bass</button>
+                </div>
+                <div class="voice-inspector">
+                  <span id="fpSelectedLabel" class="inspector-label">Chord 1 · Soprano</span>
+                  <input id="fpPitchInput" class="inspector-pitch" type="text" aria-label="Selected voice pitch" placeholder="E4" />
+                  <div class="btn-group" role="group" aria-label="Accidentals">
+                    <button id="fpAccFlat" class="mini-btn" type="button" title="Flat">♭</button>
+                    <button id="fpAccNatural" class="mini-btn" type="button" title="Natural">♮</button>
+                    <button id="fpAccSharp" class="mini-btn" type="button" title="Sharp">♯</button>
+                  </div>
+                  <div class="btn-group" role="group" aria-label="Pitch step">
+                    <button id="fpStepDown" class="mini-btn" type="button" title="Diatonic step down">↓</button>
+                    <button id="fpStepUp" class="mini-btn" type="button" title="Diatonic step up">↑</button>
+                    <button id="fpOctDown" class="mini-btn" type="button" title="Half-step down">−½</button>
+                    <button id="fpOctUp" class="mini-btn" type="button" title="Half-step up">+½</button>
+                  </div>
+                  <input id="fpRomanInput" class="inspector-meta" type="text" aria-label="Chord Roman numeral" placeholder="RN (I, V7)" />
+                  <input id="fpFigureInput" class="inspector-meta" type="text" aria-label="Chord figured bass" placeholder="Fig (6, 6/4)" />
+                </div>
+              </div>
+              <div id="fpWorksheetWrap" class="worksheet-canvas-wrap" hidden>
+                <svg
+                  id="fpWorksheetSvg"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="Interactive Four-Part SATB Worksheet Image"
+                ></svg>
+              </div>
+              <div id="fpGrandStaffWrap" class="grand-staff-wrap">
+                <svg
+                  id="fpGrandStaffSvg"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="Interactive Four-Part SATB Grand Staff"
+                ></svg>
+              </div>
+              <div class="chord-grid-wrap">
+                <div id="fpChordGrid" class="chord-grid"></div>
+              </div>
+            </section>
+            <section class="card theory-player-card" aria-label="SATB playback and voice effects">
+              <div class="player-top theory-player-top">
+                <div class="theory-player-heading">
+                  <h2>SATB Playback &amp; Voice Effects</h2>
+                  <span id="fpPlaybackPhase" class="phase-pill">Ready</span>
+                </div>
+                <div class="player-actions">
+                  <button id="fpMidiButton" class="quiet small" type="button">MIDI ↓</button>
+                  <button id="fpWavButton" class="quiet small" type="button">WAV ↓</button>
+                </div>
+              </div>
+              <div class="theory-transport">
+                <button id="fpStopButton" class="icon-button" type="button" aria-label="Stop SATB playback">■</button>
+                <button id="fpPlayButton" class="play-button" type="button">
+                  <span id="fpPlayIcon" aria-hidden="true">▶</span>
+                  <span id="fpPlayLabel">Play SATB</span>
+                </button>
+                <button id="fpLoopButton" class="icon-button" type="button" aria-label="Loop SATB" aria-pressed="false">↻</button>
+                <button id="fpRollToggle" class="secondary-button small toggle-chip" type="button" aria-pressed="false">
+                  Roll Chords
+                </button>
+                <label class="theory-tempo-inline" for="fpTempo">
+                  <span>BPM</span>
+                  <input id="fpTempo" type="number" min="40" max="160" step="1" value="78" />
+                </label>
+              </div>
+              <div class="voice-mixer">
+                <div class="mixer-channels">
+                  <div class="mixer-channel">
+                    <span class="mixer-name">S</span>
+                    <button class="mixer-btn" type="button" data-mixer-solo="S" aria-pressed="false" title="Solo Soprano">S</button>
+                    <button class="mixer-btn" type="button" data-mixer-mute="S" aria-pressed="false" title="Mute Soprano">M</button>
+                  </div>
+                  <div class="mixer-channel">
+                    <span class="mixer-name">A</span>
+                    <button class="mixer-btn" type="button" data-mixer-solo="A" aria-pressed="false" title="Solo Alto">S</button>
+                    <button class="mixer-btn" type="button" data-mixer-mute="A" aria-pressed="false" title="Mute Alto">M</button>
+                  </div>
+                  <div class="mixer-channel">
+                    <span class="mixer-name">T</span>
+                    <button class="mixer-btn" type="button" data-mixer-solo="T" aria-pressed="false" title="Solo Tenor">S</button>
+                    <button class="mixer-btn" type="button" data-mixer-mute="T" aria-pressed="false" title="Mute Tenor">M</button>
+                  </div>
+                  <div class="mixer-channel">
+                    <span class="mixer-name">B</span>
+                    <button class="mixer-btn" type="button" data-mixer-solo="B" aria-pressed="false" title="Solo Bass">S</button>
+                    <button class="mixer-btn" type="button" data-mixer-mute="B" aria-pressed="false" title="Mute Bass">M</button>
+                  </div>
+                </div>
+                <div class="mixer-presets">
+                  <button id="fpPresetAll" class="preset-chip active" type="button">All SATB</button>
+                  <button id="fpPresetOuter" class="preset-chip" type="button">Outer Voices (S+B)</button>
+                  <button id="fpPresetInner" class="preset-chip" type="button">Inner Voices (A+T)</button>
+                </div>
+              </div>
+            </section>
+            <section id="fpResults" class="card theory-results-card" aria-label="Four-part grading report"></section>
+          </div>
+        </div>
+      </div>
+      <div
+        id="melodyWorkspace"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tabMelody"
+        hidden
+      >
+        <div class="workspace theory-workspace">
+          <aside class="sidebar">
+            <section class="card theory-upload-card">
+              <div class="section-label"><span>01</span> WORKSHEET UPLOAD</div>
+              <label
+                id="melDropzone"
+                for="melFileInput"
+                class="dropzone theory-dropzone"
+                tabindex="0"
+                role="button"
+                aria-label="Upload melody worksheet image or PDF"
+                ><span class="upload-icon" aria-hidden="true">↥</span
+                ><strong>Upload melody worksheet</strong
+                ><span>Drop an image or PDF, or <u>choose a file</u></span
+                ><small>PNG, JPG, PDF, or Ctrl+V · up to 25 MB</small></label
+              ><input
+                id="melFileInput"
+                type="file"
+                accept="application/pdf,image/png,image/jpeg,image/webp,image/tiff,image/bmp"
+                hidden
+              />
+              <div id="melWorksheetInfo" class="file-info theory-worksheet-info" hidden></div>
+              <div id="melWorksheetPageWrap" class="page-controls theory-page-controls" hidden>
+                <label for="melWorksheetPageSelect">PDF page</label>
+                <div class="page-switch">
+                  <button
+                    id="melWorksheetPrevPage"
+                    class="icon-button"
+                    type="button"
+                    aria-label="Previous melody worksheet PDF page"
+                  >
+                    ‹
+                  </button>
+                  <select id="melWorksheetPageSelect" aria-label="Melody worksheet PDF page"></select>
+                  <button
+                    id="melWorksheetNextPage"
+                    class="icon-button"
+                    type="button"
+                    aria-label="Next melody worksheet PDF page"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+              <button
+                id="melClearWorksheet"
+                class="secondary-button small full-width theory-clear-btn"
+                type="button"
+                hidden
+              >
+                ← Return to exercises
+              </button>
+            </section>
+            <section class="card theory-setup-card">
+              <div class="section-label"><span>02</span> MELODY &amp; HARMONIZATION</div>
+              <label class="theory-field" for="melExerciseSelect">
+                <span>FRQ 7 Melody</span>
+                <select id="melExerciseSelect"></select>
+              </label>
+              <div class="theory-quick-actions">
+                <button id="melSuggestButton" class="primary-button small full-width" type="button">
+                  ✦ Auto-Harmonize / Suggest
+                </button>
+                <button id="melLoadStarter" class="secondary-button small" type="button">
+                  Reset Bass &amp; Numerals
+                </button>
+                <button id="melLoadAttempt" class="secondary-button small" type="button">
+                  Load Sample Student Draft
+                </button>
+                <button id="melLoadSolution" class="secondary-button small" type="button">
+                  Load Model Harmonization
+                </button>
+              </div>
+              <div id="melParamsGrid" class="theory-params-grid" hidden>
+                <label class="theory-field" for="melKeyTonic">
+                  <span>Key</span>
+                  <select id="melKeyTonic">
+                    <option value="C">C</option>
+                    <option value="G">G</option>
+                    <option value="D">D</option>
+                    <option value="A">A</option>
+                    <option value="E">E</option>
+                    <option value="B">B</option>
+                    <option value="F#">F♯</option>
+                    <option value="F">F</option>
+                    <option value="Bb">B♭</option>
+                    <option value="Eb">E♭</option>
+                    <option value="Ab">A♭</option>
+                    <option value="Db">D♭</option>
+                    <option value="Gb">G♭</option>
+                  </select>
+                </label>
+                <label class="theory-field" for="melKeyMode">
+                  <span>Mode</span>
+                  <select id="melKeyMode">
+                    <option value="major">Major</option>
+                    <option value="minor">Minor</option>
+                  </select>
+                </label>
+                <label class="theory-field" for="melTimeSig">
+                  <span>Meter</span>
+                  <select id="melTimeSig">
+                    <option value="4/4">4/4</option>
+                    <option value="3/4">3/4</option>
+                    <option value="2/4">2/4</option>
+                    <option value="6/8">6/8</option>
+                    <option value="3/8">3/8</option>
+                    <option value="2/2">2/2</option>
+                  </select>
+                </label>
+              </div>
+              <label class="theory-field mel-grade-from-field" for="melGradeFromInput">
+                <span>Start grading from beat</span>
+                <input id="melGradeFromInput" type="number" min="0" step="0.5" value="0" />
+              </label>
+              <div class="mel-meta-row">
+                <div><small>KEY</small><strong id="melMetaKey">C Major</strong></div>
+                <div><small>METER</small><strong id="melMetaMeter">4/4</strong></div>
+              </div>
+            </section>
+            <section class="card theory-prompt-card">
+              <div class="section-label"><span>03</span> FRQ 7 PROMPT &amp; CADENCES</div>
+              <p id="melInstructions" class="theory-instructions"></p>
+              <div id="melPhraseGoals" class="phrase-goals"></div>
+            </section>
+          </aside>
+          <div class="main-column">
+            <section class="card theory-staff-card" aria-label="Melody harmonization grand staff">
+              <div class="score-top theory-card-top">
+                <div>
+                  <p class="eyebrow">HARMONIZE A MELODY · FRQ 7</p>
+                  <div class="theory-title-row">
+                    <h2 id="melTitle">Harmonize a Melody</h2>
+                    <span id="melKeyPill" class="theory-pill">C Major · 4/4</span>
+                  </div>
+                </div>
+                <div class="mel-top-actions">
+                  <div
+                    id="melViewToggle"
+                    class="segmented-control view-toggle"
+                    role="group"
+                    aria-label="Melody view mode"
+                    hidden
+                  >
+                    <button
+                      id="melViewWorksheet"
+                      type="button"
+                      class="seg-btn active"
+                      data-view-mode="worksheet"
+                      aria-pressed="true"
+                    >
+                      Worksheet Image
+                    </button>
+                    <button
+                      id="melViewEngraved"
+                      type="button"
+                      class="seg-btn"
+                      data-view-mode="engraved"
+                      aria-pressed="false"
+                    >
+                      Engraved Staff
+                    </button>
+                  </div>
+                  <label class="theory-check inline-check" for="melShowSatbToggle">
+                    <input id="melShowSatbToggle" type="checkbox" />
+                    <span>Show auto-realized Alto &amp; Tenor</span>
+                  </label>
+                  <button id="melGradeButton" class="primary-button" type="button">
+                    Grade Harmonization
+                  </button>
+                </div>
+              </div>
+              <div
+                id="melNotice"
+                class="notice"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></div>
+              <div id="melEditTargetWrap" class="mel-edit-toolbar" hidden>
+                <span class="chips-label">Worksheet click target:</span>
+                <div
+                  id="melEditTarget"
+                  class="segmented-control compact-seg"
+                  role="group"
+                  aria-label="Worksheet edit target"
+                >
+                  <button
+                    id="melEditBass"
+                    type="button"
+                    class="seg-btn active"
+                    data-edit-target="bass"
+                    aria-pressed="true"
+                  >
+                    Edit Bass
+                  </button>
+                  <button
+                    id="melEditMelody"
+                    type="button"
+                    class="seg-btn"
+                    data-edit-target="melody"
+                    aria-pressed="false"
+                  >
+                    Edit Melody
+                  </button>
+                </div>
+                <span class="mel-edit-hint">Drag any marker vertically or click a staff line to correct pitches.</span>
+              </div>
+              <div id="melWorksheetWrap" class="worksheet-canvas-wrap" hidden>
+                <svg
+                  id="melWorksheetSvg"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="Interactive Melody Harmonization Worksheet Image"
+                ></svg>
+              </div>
+              <div id="melGrandStaffWrap" class="grand-staff-wrap">
+                <svg
+                  id="melGrandStaffSvg"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="Interactive Melody Harmonization Grand Staff"
+                ></svg>
+              </div>
+              <div id="melNumeralChips" class="numeral-chips"></div>
+              <div class="slot-grid-wrap">
+                <div id="melSlotGrid" class="slot-grid"></div>
+              </div>
+            </section>
+            <section class="card theory-player-card" aria-label="Harmonization playback and comparison">
+              <div class="player-top theory-player-top">
+                <div class="theory-player-heading">
+                  <h2>Harmonization Playback &amp; Comparison</h2>
+                  <span id="melPlaybackPhase" class="phase-pill">Ready</span>
+                </div>
+                <div class="player-actions">
+                  <button id="melMidiButton" class="quiet small" type="button">MIDI ↓</button>
+                  <button id="melWavButton" class="quiet small" type="button">WAV ↓</button>
+                </div>
+              </div>
+              <div id="melPlayMode" class="segmented-control" role="group" aria-label="Playback voicing mode">
+                <button type="button" class="seg-btn" data-play-mode="melody" aria-pressed="false">Melody Only</button>
+                <button type="button" class="seg-btn active" data-play-mode="outer" aria-pressed="true">Soprano + Bass</button>
+                <button type="button" class="seg-btn" data-play-mode="satb" aria-pressed="false">Full 4-Part SATB</button>
+              </div>
+              <div class="theory-transport">
+                <button id="melStopButton" class="icon-button" type="button" aria-label="Stop harmonization playback">■</button>
+                <button id="melPlayButton" class="play-button" type="button">
+                  <span id="melPlayIcon" aria-hidden="true">▶</span>
+                  <span id="melPlayLabel">Play</span>
+                </button>
+                <button id="melRollToggle" class="secondary-button small toggle-chip" type="button" aria-pressed="false">
+                  Roll Chords
+                </button>
+                <label class="theory-tempo-inline" for="melTempo">
+                  <span>BPM</span>
+                  <input id="melTempo" type="number" min="40" max="160" step="1" value="82" />
+                </label>
+                <button id="melCompareSuggestedButton" class="secondary-button small compare-action-btn" type="button">
+                  ⇄ A/B Compare: Yours vs. Suggested
+                </button>
+              </div>
+            </section>
+            <section id="melResults" class="card theory-results-card" aria-label="Harmonization grading report"></section>
+          </div>
         </div>
       </div>
       <footer>

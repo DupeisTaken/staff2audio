@@ -14,6 +14,7 @@ import {
   transposedKeySignature,
   spokenPitchName,
 } from "./note-names.js";
+import { initTheoryStudio } from "./theory-ui.js";
 
 const $ = (id) => document.getElementById(id);
 const state = {
@@ -287,6 +288,8 @@ function enableControls() {
   $("wavButton").disabled ||= state.exporting;
   $("editButton").disabled = state.busy || !staff;
   $("viewButton").disabled = state.busy || !staff;
+  if ($("sendToHarmonizerButton"))
+    $("sendToHarmonizerButton").disabled = state.busy || !hasNotes;
   $("pageSelect").disabled = state.importing;
   $("tempo").disabled = state.busy || !staff;
   $("tempoPreset").disabled = state.busy || !staff;
@@ -673,6 +676,7 @@ function acceptFile(file) {
 async function play() {
   const staff = currentStaff();
   if (!staff || state.busy) return;
+  theoryStudio?.stopPlayback();
   state.soundAction++;
   clearTimeout(previewTimer);
   if (player.state === "playing") {
@@ -860,7 +864,16 @@ document.addEventListener("paste", (e) => {
   );
   if (item) {
     e.preventDefault();
-    acceptFile(item.getAsFile());
+    const file = item.getAsFile();
+    if (!file) return;
+    const activeTab = theoryStudio?.getActiveTab?.() || "score";
+    if (activeTab === "four-part") {
+      theoryStudio.uploadWorksheet("four_part", file);
+    } else if (activeTab === "melody") {
+      theoryStudio.uploadWorksheet("melody", file);
+    } else {
+      acceptFile(file);
+    }
   }
 });
 for (const id of ["demoButton", "emptyDemoButton"])
@@ -1058,7 +1071,9 @@ $("wavButton").addEventListener("click", async () => {
   }
 });
 document.addEventListener("keydown", (e) => {
+  const scoreActive = !$("scoreWorkspace") || !$("scoreWorkspace").hidden;
   if (
+    scoreActive &&
     !e.defaultPrevented &&
     e.code === "Space" &&
     !["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(
@@ -1071,8 +1086,21 @@ document.addEventListener("keydown", (e) => {
     play();
   }
 });
+const theoryStudio = initTheoryStudio({
+  player,
+  toast,
+  onBeforeTheoryPlay: () => stopPlayback(),
+});
+$("sendToHarmonizerButton")?.addEventListener("click", () => {
+  const staff = currentStaff();
+  if (!staff) return;
+  stopPlayback();
+  const title = $("scoreTitle")?.textContent || `Staff ${state.selected + 1}`;
+  theoryStudio.importScannedMelody(staff, title);
+});
 window.addEventListener("pagehide", () => {
   stopPlayback();
+  theoryStudio.stopPlayback();
   importer.cancelWork();
 });
 buildKeyboard();
