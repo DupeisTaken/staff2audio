@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 from contextlib import asynccontextmanager
 import io
+import json
 import math
 import threading
 import time
@@ -22,12 +23,18 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 from starlette.datastructures import UploadFile
 from starlette.concurrency import run_in_threadpool
 
+from staff2audio.grand_staff_omr import recognize_worksheet
 from staff2audio.omr import recognize
+from staff2audio.theory import (
+    get_exercise_catalog, grade_four_part, grade_melody_harmonization, suggest_harmonization,
+)
 
 ROOT = Path(__file__).resolve().parent
 MAX_BYTES = 25 * 1024 * 1024
 MAX_PIXELS = 30_000_000
 MAX_EDGE = 2600
+MAX_THEORY_BYTES = 256 * 1024
+MAX_THEORY_ROWS = 256
 # Serial CV work keeps the desktop responsive and bounds image memory.
 recognition_lock = threading.RLock()
 app = FastAPI(title="staff2audio · Local score to piano", docs_url=None, redoc_url=None)
@@ -168,7 +175,7 @@ def png_preview(image: np.ndarray) -> str:
 
 
 @asynccontextmanager
-async def score_upload(request: Request):
+async def score_upload(request: Request, *, worksheet: bool = False):
     """Share one bounded, in-memory multipart policy across every upload route."""
     if not request.headers.get("content-type", "").lower().startswith("multipart/form-data;"):
         raise HTTPException(422, "Choose a screenshot or PDF using the file picker.")
@@ -197,10 +204,15 @@ async def score_upload(request: Request):
     try:
         form = await parser.parse()
         fields = [key for key, _ in form.multi_items()]
-        if any(key not in {"file", "page"} for key in fields):
-            raise ValueError("Use only the file and page fields.")
+        allowed = {"file", "page", "mode"} if worksheet else {"file", "page"}
+        if any(key not in allowed for key in fields):
+            raise ValueError("Use only the file, page, and mode fields." if worksheet
+                             else "Use only the file and page fields.")
         if fields.count("page") > 1:
             raise ValueError("Choose one page number.")
+        mode = form.get("mode", "four_part")
+        if worksheet and (fields.count("mode") > 1 or mode not in ("four_part", "melody")):
+            raise ValueError("Choose one worksheet mode: four_part or melody.")
         file = form.get("file")
         if not isinstance(file, UploadFile):
             raise ValueError("Choose a screenshot or PDF first.")
@@ -218,7 +230,7 @@ async def score_upload(request: Request):
         name = Path(file.filename or "Screenshot").name
         # Once bytes are available, release the parser's duplicate buffer early.
         await file.close()
-        yield data, name, page
+        yield (data, name, page, mode) if worksheet else (data, name, page)
     except (ValueError, MultiPartException) as exc:
         raise HTTPException(422, str(exc)) from exc
     finally:
@@ -267,6 +279,73 @@ def demo():
     if isinstance(image, tuple):
         image = image[0]
     return analyze_array(np.asarray(image), name="A little morning music · example", page=1, pages=1)
+
+
+@app.post("/api/theory/analyze-worksheet")
+async def analyze_worksheet(request: Request):
+    """Recognize the selected grand-staff worksheet page in memory."""
+    async with score_upload(request, worksheet=True) as (data, name, page, mode):
+        def process():
+            started = time.perf_counter()
+            with recognition_lock:
+                image, pages = decode_score(data, page)
+                result = recognize_worksheet(image, mode=mode)
+                return {**result, "preview": png_preview(image), "filename": name, "page": page,
+                        "pages": pages, "elapsed_ms": round((time.perf_counter() - started) * 1000)}
+        return await run_in_threadpool(process)
+
+
+def _invalid_json_constant(value):
+    raise ValueError(f"{value} is not a valid JSON value.")
+
+
+def _finite_json_number(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("JSON numbers must be finite.")
+    return number
+
+
+async def _theory_json(request: Request, operation):
+    """Read a bounded JSON object before running a theory operation off the event loop."""
+    body = bytearray()
+    try:
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > MAX_THEORY_BYTES:
+                raise HTTPException(413, "The theory request exceeds 256 KiB.")
+            body.extend(chunk)
+        payload = json.loads(body, parse_constant=_invalid_json_constant, parse_float=_finite_json_number)
+        if not isinstance(payload, dict):
+            raise ValueError("Provide a JSON object.")
+        for field in ("melody", "harmonization", "chords", "progression", "phrases"):
+            rows = payload.get(field)
+            if isinstance(rows, list) and len(rows) > MAX_THEORY_ROWS:
+                raise ValueError(f"{field.capitalize()} may contain at most {MAX_THEORY_ROWS} rows.")
+        return await run_in_threadpool(operation, payload)
+    except RecursionError as exc:
+        raise HTTPException(422, "The JSON document is nested too deeply.") from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.get("/api/theory/exercises")
+def theory_exercises():
+    return get_exercise_catalog()
+
+
+@app.post("/api/theory/grade/four-part")
+async def theory_grade_four_part(request: Request):
+    return await _theory_json(request, grade_four_part)
+
+
+@app.post("/api/theory/grade/melody")
+async def theory_grade_melody(request: Request):
+    return await _theory_json(request, grade_melody_harmonization)
+
+
+@app.post("/api/theory/harmonize/suggest")
+async def theory_suggest_harmonization(request: Request):
+    return await _theory_json(request, suggest_harmonization)
 
 
 if __name__ == "__main__":
